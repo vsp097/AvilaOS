@@ -17,7 +17,7 @@ public class Cola<T> {
         in = -1;
     }
     
-    void Encolar(T dato){
+    public void Encolar(T dato){
         in ++;
         Nodo<T> aux = new Nodo(dato);
         if (pFinal == null){ 
@@ -29,7 +29,7 @@ public class Cola<T> {
         }
     }
     
-    void Desencolar(){
+    public void Desencolar(){
         in--;
         if(pFirst == null){
             return;
