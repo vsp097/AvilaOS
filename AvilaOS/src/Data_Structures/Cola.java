@@ -30,11 +30,12 @@ public class Cola<T> {
     }
     
     public T Desencolar(){
-        in--;
+        
         if(pFirst == null){
             return null;
         }
         else{
+            in--;
             Nodo<T> aux = pFirst;
             if(pFinal == pFirst){
                 aux = aux.pNext;

@@ -11,61 +11,61 @@ package Data_Structures;
 public class PCB {
     private int ID;
     protected String name;
-    protected String pc;
+    protected int pc;
     protected String state;
     protected String type;
-    protected String mem;
-    protected String deadline;
-    protected String time;
+    protected float mem;
+    protected int deadline;
+    protected float time;
     
-    public PCB(int id, String n, String p, String s, String t, String m){
+    public PCB(int id, String n, int p, String s, String t, float m){
     ID = id;
     name =n;
     pc=p;
     state=s;
     type=t;
     mem=m;
-    deadline= null;
-    time=null;
+    deadline= 0;
+    time=0;
     }
     
-    int getId(){
+    public int getId(){
         return ID;
     }
     
-    String getname(){
+    public String getname(){
         return name;
     }
     
-    String getpc(){
+    public int getpc(){
         return pc;
     }
 
-    String getstate(){
+    public String getstate(){
         return state;
     }
 
-    String gettype(){
+    public String gettype(){
         return type;
     }
 
-    String getmem(){
+    public float getmem(){
         return mem;
     }
     
-    String getdeadline(){
+    public int getdeadline(){
         return deadline;
     }
     
-    String getime(){
+    public float getime(){
         return time;
     }
     
-    void settime(String t){
+    public void settime(float t){
         time =t;
     }
     
-    void setdeadline(String d){
+    public void setdeadline(int d){
         deadline = d;
     }
 }
