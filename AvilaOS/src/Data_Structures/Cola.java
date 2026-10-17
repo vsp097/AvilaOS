@@ -29,18 +29,18 @@ public class Cola<T> {
         }
     }
     
-    public void Desencolar(){
+    public T Desencolar(){
         in--;
         if(pFirst == null){
-            return;
+            return null;
         }
         else{
             Nodo<T> aux = pFirst;
             if(pFinal == pFirst){
-                pFinal = pFirst.pNext;
+                aux = aux.pNext;
             }
-            pFirst = pFirst.pNext;
-            
+            aux = aux.pNext;
+            return aux.data;
         }
     }
 }
