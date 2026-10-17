@@ -5,6 +5,8 @@
 package avilaos;
 import Data_Structures.Cola;
 import Data_Structures.PCB;
+import java.util.concurrent.Semaphore;
+
 /**
  *
  * @author vyckh
@@ -28,31 +30,51 @@ public class Semaforo {
 
     //cuando un proceso pide pasar se resta 1; si queda negativo, se bloquea y va a la cola
     public boolean semaWait(PCB proceso) {
+        mutex.acquireUninterruptibly();
+        try {
         valor = valor-1;
         if (valor<0) {
             bloqueados.Encolar(proceso);
             return true;
         }
         return false;
+        } finally {
+            mutex.release();
+        }
     }
 
     //avisa que el proceso termino, sumandole 1; si queda en 0 o menos, pasa al primero de la cola
     public boolean semaSignal() {
-        valor = valor+1;
+      mutex.acquireUninterruptibly();
+      try {
+       valor = valor+1;
         if (valor<=0) {
             bloqueados.Desencolar();
             return true;
         }
         return false;
+        } finally {
+            mutex.release();
+        }
     }
+    
 
     //para devolver el valor
     public int getValor() {
-        return valor;
+        mutex.acquireUninterruptibly();
+        try {
+            return valor;
+        } finally {
+            mutex.release();
+        }
     }
+    
 
     //para devolver el nombre
     public String getNombre() {
         return nombre;
     }
+    
+    private Semaphore mutex = new Semaphore(1);
+    
 }
