@@ -5,37 +5,76 @@
 package avilaos;
 import Data_Structures.Cola;
 import Data_Structures.PCB;
+import java.util.concurrent.Semaphore;
+
 /**
  *
  * @author vyckh
  */
 
-//pendiente poner comentarios
-public class Semaforo {
-    private int valor;
-    private Cola<PCB> bloqueados;
 
-    public Semaforo(int valorInicial) {
+public class Semaforo {
+    //contador que si es negativo indica cuantos procesos estan esperando
+    private int valor;
+    //los bloqueados en cola
+    private Cola<PCB> bloqueados;
+    //para el nombre del semaforo, y luego mostrarlo en el log
+    private String nombre;
+
+    //se crea un semaforo nuevo para llevar la cuenta de los bloqueados
+    public Semaforo(String nombre, int valorInicial) {
+        this.nombre = nombre;
         this.valor = valorInicial;
         this.bloqueados = new Cola<>();
     }
 
+    //cuando un proceso pide pasar se resta 1; si queda negativo, se bloquea y va a la cola
     public boolean semaWait(PCB proceso) {
+        mutex.acquireUninterruptibly();
+        try {
         valor = valor-1;
         if (valor<0) {
             bloqueados.Encolar(proceso);
             return true;
         }
         return false;
+        } finally {
+            mutex.release();
+        }
     }
 
+    //avisa que el proceso termino, sumandole 1; si queda en 0 o menos, pasa al primero de la cola
     public boolean semaSignal() {
-        valor = valor+1;
+      mutex.acquireUninterruptibly();
+      try {
+       valor = valor+1;
         if (valor<=0) {
             bloqueados.Desencolar();
             return true;
         }
         return false;
+        } finally {
+            mutex.release();
+        }
     }
+    
 
+    //para devolver el valor
+    public int getValor() {
+        mutex.acquireUninterruptibly();
+        try {
+            return valor;
+        } finally {
+            mutex.release();
+        }
+    }
+    
+
+    //para devolver el nombre
+    public String getNombre() {
+        return nombre;
+    }
+    
+    private Semaphore mutex = new Semaphore(1);
+    
 }
