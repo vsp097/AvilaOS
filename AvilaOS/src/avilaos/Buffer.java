@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package avilaos;
+import java.util.concurrent.Semaphore;
 
 /**
  *
@@ -21,6 +22,7 @@ public class Buffer {
     private Semaforo vacio;
     private Semaforo lleno;
     private Semaforo mutex;
+    private Semaphore llave = new Semaphore(1);
 
     public Buffer(String nombre, int capacidad) {
         this.nombre = nombre;
@@ -32,5 +34,28 @@ public class Buffer {
         this.vacio = new Semaforo("vacio", capacidad);
         this.lleno = new Semaforo("lleno", 0);
         this.mutex = new Semaforo("mutex", 1);
+    }
+    
+    public void insertar(int elemento) {
+        llave.acquireUninterruptibly();
+        try {
+            elementos[entrada] = elemento;
+            entrada = (entrada + 1) % capacidad;
+            cantidad = cantidad + 1;
+        } finally {
+            llave.release();
+        }
+    }
+
+    public int extraer() {
+        llave.acquireUninterruptibly();
+        try {
+            int elemento = elementos[salida];
+            salida = (salida + 1) % capacidad;
+            cantidad = cantidad - 1;
+            return elemento;
+        } finally {
+            llave.release();
+        }
     }
 }
