@@ -14,15 +14,19 @@ import Data_Structures.PCB;
 public class Semaforo {
     //contador que si es negativo indica cuantos procesos estan esperando
     private int valor;
-    //los bloqueados en cola 
+    //los bloqueados en cola
     private Cola<PCB> bloqueados;
+    //para el nombre del semaforo, y luego mostrarlo en el log
+    private String nombre;
 
     //se crea un semaforo nuevo para llevar la cuenta de los bloqueados
-    public Semaforo(int valorInicial) {
+    public Semaforo(String nombre, int valorInicial) {
+        this.nombre = nombre;
         this.valor = valorInicial;
         this.bloqueados = new Cola<>();
     }
-    //cuando un proceso pide pasar,y que esta en el proceso, se resta 1 para aclarar que hay un valor menos en el buffer
+
+    //cuando un proceso pide pasar se resta 1; si queda negativo, se bloquea y va a la cola
     public boolean semaWait(PCB proceso) {
         valor = valor-1;
         if (valor<0) {
@@ -31,7 +35,8 @@ public class Semaforo {
         }
         return false;
     }
-    //avisa que el proceso termino, sumandole 1,si queda en 0 o menos, pasa asi al primero de la cola
+
+    //avisa que el proceso termino, sumandole 1; si queda en 0 o menos, pasa al primero de la cola
     public boolean semaSignal() {
         valor = valor+1;
         if (valor<=0) {
@@ -41,4 +46,13 @@ public class Semaforo {
         return false;
     }
 
+    //para devolver el valor
+    public int getValor() {
+        return valor;
+    }
+
+    //para devolver el nombre
+    public String getNombre() {
+        return nombre;
+    }
 }
