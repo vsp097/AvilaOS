@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package avilaos;
+
 import Data_Structures.Cola;
 import Data_Structures.PCB;
 import java.util.concurrent.Semaphore;
@@ -30,7 +31,7 @@ public class Semaforo {
 
     //cuando un proceso pide pasar se resta 1; si queda negativo, se bloquea y va a la cola
     public boolean semaWait(PCB proceso) {
-        mutex.acquireUninterruptibly();
+        llave.acquireUninterruptibly();
         try {
         valor = valor-1;
         if (valor<0) {
@@ -39,13 +40,13 @@ public class Semaforo {
         }
         return false;
         } finally {
-            mutex.release();
+            llave.release();
         }
     }
 
     //avisa que el proceso termino, sumandole 1; si queda en 0 o menos, pasa al primero de la cola
     public boolean semaSignal() {
-      mutex.acquireUninterruptibly();
+      llave.acquireUninterruptibly();
       try {
        valor = valor+1;
         if (valor<=0) {
@@ -54,18 +55,18 @@ public class Semaforo {
         }
         return false;
         } finally {
-            mutex.release();
+            llave.release();
         }
     }
     
 
     //para devolver el valor
     public int getValor() {
-        mutex.acquireUninterruptibly();
+        llave.acquireUninterruptibly();
         try {
             return valor;
         } finally {
-            mutex.release();
+            llave.release();
         }
     }
     
@@ -75,6 +76,6 @@ public class Semaforo {
         return nombre;
     }
     
-    private Semaphore mutex = new Semaphore(1);
+    private Semaphore llave = new Semaphore(1);
     
 }
