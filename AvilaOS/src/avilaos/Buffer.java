@@ -30,6 +30,9 @@ public class Buffer {
 
     
     public Buffer(String nombre, int capacidad) {
+        if (capacidad < 1) {
+          throw new IllegalArgumentException("La capacidad del buffer debe ser mayor que 0");
+        }
         this.nombre = nombre;
         this.capacidad = capacidad;
         this.elementos = new int[capacidad];
@@ -156,5 +159,23 @@ public class Buffer {
 
     public Semaforo getMutex() {
         return mutex;
+    }
+    
+        public int getElemento(int posicion) {
+        llave.acquireUninterruptibly();
+        try {
+            return elementos[posicion];
+        } finally {
+            llave.release();
+        }
+    }
+
+    public boolean estaOcupada(int posicion) {
+        llave.acquireUninterruptibly();
+        try {
+            return (posicion - salida + capacidad) % capacidad < cantidad;
+        } finally {
+            llave.release();
+        }
     }
 }
