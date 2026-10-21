@@ -9,5 +9,8 @@ package avilaos;
  * @author vyckh
  */
 public enum PoliticaPlanificacion {
-    
+    FCFS,
+    EDF,
+    ROUND_ROBIN,
+    PRIORIDADES
 }

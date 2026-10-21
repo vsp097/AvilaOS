@@ -4,10 +4,15 @@
  */
 package avilaos;
 
+import Data_Structures.Cola;
+import Data_Structures.PCB;
+
 /**
  *
  * @author vyckh
  */
 public interface Planificador {
-    
+    PCB elegirSiguiente(Cola<PCB> listos);
+
+    boolean debeSacar(PCB actual, Cola<PCB> listos, int ciclosUsados);
 }
