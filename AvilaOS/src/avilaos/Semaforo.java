@@ -45,15 +45,14 @@ public class Semaforo {
     }
 
     //avisa que el proceso termino, sumandole 1; si queda en 0 o menos, pasa al primero de la cola
-    public boolean semaSignal() {
-      llave.acquireUninterruptibly();
-      try {
-       valor = valor+1;
-        if (valor<=0) {
-            bloqueados.Desencolar();
-            return true;
-        }
-        return false;
+    public PCB semaSignal() {
+        llave.acquireUninterruptibly();
+        try {
+            valor = valor + 1;
+            if (valor <= 0) {
+                return bloqueados.Desencolar();
+            }
+            return null;
         } finally {
             llave.release();
         }
