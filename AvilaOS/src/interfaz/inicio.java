@@ -35,6 +35,7 @@ public class inicio extends javax.swing.JFrame {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        java.awt.GridBagConstraints gridBagConstraints;
 
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
@@ -64,19 +65,48 @@ public class inicio extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel2.setBackground(new java.awt.Color(153, 153, 153));
-        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        jPanel2.setLayout(new java.awt.GridBagLayout());
 
         jLabel1.setText("Computador 2");
-        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 30, 100, 30));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 133;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.ipadx = 13;
+        gridBagConstraints.ipady = 12;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(30, 32, 0, 0);
+        jPanel2.add(jLabel1, gridBagConstraints);
 
         jLabel2.setText("Computador 1");
-        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 30, 100, 30));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.ipadx = 13;
+        gridBagConstraints.ipady = 12;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(30, 52, 0, 0);
+        jPanel2.add(jLabel2, gridBagConstraints);
 
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
-        jPanel2.add(jSeparator1, new org.netbeans.lib.awtextra.AbsoluteConstraints(357, 0, -1, 320));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 64;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridheight = 8;
+        gridBagConstraints.ipadx = 2;
+        gridBagConstraints.ipady = 319;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(0, 18, 0, 0);
+        jPanel2.add(jSeparator1, gridBagConstraints);
 
         jLabel3.setText("CPU");
-        jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 80, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(20, 50, 0, 0);
+        jPanel2.add(jLabel3, gridBagConstraints);
 
         CPU1.setText("Ingrese el CPU:");
         CPU1.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -85,10 +115,23 @@ public class inicio extends javax.swing.JFrame {
             }
         });
         CPU1.addActionListener(this::CPU1ActionPerformed);
-        jPanel2.add(CPU1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 110, 250, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 9;
+        gridBagConstraints.ipadx = 186;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(12, 40, 0, 0);
+        jPanel2.add(CPU1, gridBagConstraints);
 
         jLabel4.setText("RAM");
-        jPanel2.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 170, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(36, 50, 0, 0);
+        jPanel2.add(jLabel4, gridBagConstraints);
 
         RAM1.setText("Ingrese la RAM:");
         RAM1.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -97,10 +140,22 @@ public class inicio extends javax.swing.JFrame {
             }
         });
         RAM1.addActionListener(this::RAM1ActionPerformed);
-        jPanel2.add(RAM1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 200, 110, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.ipadx = 46;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(12, 40, 0, 0);
+        jPanel2.add(RAM1, gridBagConstraints);
 
         jLabel5.setText("CPU");
-        jPanel2.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 80, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 131;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(20, 10, 0, 0);
+        jPanel2.add(jLabel5, gridBagConstraints);
 
         CPU2.setText("Ingrese el CPU:");
         CPU2.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -109,10 +164,23 @@ public class inicio extends javax.swing.JFrame {
             }
         });
         CPU2.addActionListener(this::CPU2ActionPerformed);
-        jPanel2.add(CPU2, new org.netbeans.lib.awtextra.AbsoluteConstraints(420, 110, 250, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 131;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 139;
+        gridBagConstraints.ipadx = 186;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(12, 0, 0, 0);
+        jPanel2.add(CPU2, gridBagConstraints);
 
         jLabel6.setText("RAM");
-        jPanel2.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(430, 170, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 131;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(36, 10, 0, 0);
+        jPanel2.add(jLabel6, gridBagConstraints);
 
         RAM2.setText("Ingrese la RAM:");
         RAM2.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -121,51 +189,135 @@ public class inicio extends javax.swing.JFrame {
             }
         });
         RAM2.addActionListener(this::RAM2ActionPerformed);
-        jPanel2.add(RAM2, new org.netbeans.lib.awtextra.AbsoluteConstraints(420, 200, 120, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 131;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.ipadx = 56;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(12, 0, 0, 0);
+        jPanel2.add(RAM2, gridBagConstraints);
 
         Ingresar1.setText("Ingresar");
         Ingresar1.addActionListener(this::Ingresar1ActionPerformed);
-        jPanel2.add(Ingresar1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 250, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(26, 52, 0, 0);
+        jPanel2.add(Ingresar1, gridBagConstraints);
 
         Ingresar2.setText("Ingresar");
         Ingresar2.addActionListener(this::Ingresar2ActionPerformed);
-        jPanel2.add(Ingresar2, new org.netbeans.lib.awtextra.AbsoluteConstraints(510, 250, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 133;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(26, 52, 0, 0);
+        jPanel2.add(Ingresar2, gridBagConstraints);
 
         type1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "mb", "GB" }));
         type1.addActionListener(this::type1ActionPerformed);
-        jPanel2.add(type1, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 200, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 8;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 22;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(12, 20, 0, 0);
+        jPanel2.add(type1, gridBagConstraints);
 
         type2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "mb", "GB" }));
-        jPanel2.add(type2, new org.netbeans.lib.awtextra.AbsoluteConstraints(620, 200, -1, -1));
-        jPanel2.add(jSeparator2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 320, 730, 10));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 269;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 140;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(12, 0, 0, 0);
+        jPanel2.add(type2, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.gridwidth = 483;
+        gridBagConstraints.ipadx = 729;
+        gridBagConstraints.ipady = 9;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        jPanel2.add(jSeparator2, gridBagConstraints);
 
         inicio.setText("Inicio");
         inicio.addActionListener(this::inicioActionPerformed);
-        jPanel2.add(inicio, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 370, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 35;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.gridwidth = 31;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(22, 8, 0, 0);
+        jPanel2.add(inicio, gridBagConstraints);
 
         jLabel7.setText("Iniciar Simulacion");
-        jPanel2.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 330, 110, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 16;
+        gridBagConstraints.gridy = 9;
+        gridBagConstraints.gridwidth = 73;
+        gridBagConstraints.ipadx = 6;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(0, 20, 0, 0);
+        jPanel2.add(jLabel7, gridBagConstraints);
 
         jLabel8.setText("Cantidad de memoria");
-        jPanel2.add(jLabel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(580, 170, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 136;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 346;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(36, 40, 0, 0);
+        jPanel2.add(jLabel8, gridBagConstraints);
 
         jLabel9.setText("Cantidad de memoria");
-        jPanel2.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 170, -1, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 30;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(36, 0, 0, 0);
+        jPanel2.add(jLabel9, gridBagConstraints);
 
         error3.setForeground(new java.awt.Color(255, 0, 0));
         error3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         error3.setText("jLabel10");
-        jPanel2.add(error3, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 410, 510, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 11;
+        gridBagConstraints.gridwidth = 136;
+        gridBagConstraints.ipadx = 461;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(16, 32, 13, 0);
+        jPanel2.add(error3, gridBagConstraints);
 
         error1.setForeground(new java.awt.Color(255, 0, 0));
         error1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         error1.setText("jLabel11");
-        jPanel2.add(error1, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 290, 290, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 17;
+        gridBagConstraints.ipadx = 241;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(16, 30, 0, 0);
+        jPanel2.add(error1, gridBagConstraints);
 
         error2.setForeground(new java.awt.Color(255, 0, 0));
         error2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         error2.setText("jLabel12");
-        jPanel2.add(error2, new org.netbeans.lib.awtextra.AbsoluteConstraints(390, 290, 310, -1));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 65;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 345;
+        gridBagConstraints.ipadx = 261;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.insets = new java.awt.Insets(16, 30, 0, 0);
+        jPanel2.add(error2, gridBagConstraints);
 
         getContentPane().add(jPanel2, java.awt.BorderLayout.LINE_END);
 
