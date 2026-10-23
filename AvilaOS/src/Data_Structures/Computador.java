@@ -4,17 +4,19 @@
  */
 package Data_Structures;
 
+import avilaos.ClockListener;
+
 /**
  *
  * @author diego
  */
-public class Computador {
+public class Computador implements ClockListener{
     protected String CPUt;
     protected float RAMt;
     protected String CPU;
     protected float RAM;
     protected String datatype;
-    
+    //semaforo
     
     public Computador(){
         CPU = null;
@@ -66,6 +68,11 @@ public class Computador {
     
     public void useRam(float n){
         RAM-= n;
+    }
+
+    @Override
+    public void onTick(long cycle) {
+        //lo del semaforo vycky
     }
     
 }
