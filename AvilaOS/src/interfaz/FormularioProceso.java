@@ -158,7 +158,7 @@ public class FormularioProceso extends JFrame {
             }
 
             //el pcb de diego solo recibe algunos datos en el constructor, el resto va con set
-            PCB pcb = new PCB(contadorId, nombre, 0, "Nuevo", tipo, memoria);
+            PCB pcb = new PCB(contadorId, nombre, 0, tipo, memoria);
             contadorId++;
             pcb.setPrioridad(prioridad);
             pcb.setdeadline(deadline);

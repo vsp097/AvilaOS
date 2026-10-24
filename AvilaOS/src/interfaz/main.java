@@ -357,10 +357,14 @@ public class main extends javax.swing.JFrame {
 
     private void vista2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vista2MouseClicked
         // TODO add your handling code here:
+        
     }//GEN-LAST:event_vista2MouseClicked
 
     private void vista1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vista1MouseClicked
         // TODO add your handling code here:
+        Procesoscreated v2 = new Procesoscreated(this, computador1, computador2);
+        v2.setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_vista1MouseClicked
 
 

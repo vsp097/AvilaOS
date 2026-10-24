@@ -29,13 +29,13 @@ public class Listas<T> {
             return (T) pFirst.data;
         }
         Nodo aux = pFirst;
-        for(int i = 0; i< in; i++){
+        for(int i = 0; i< x; i++){
             aux = aux.pNext;
         }
         return (T) aux.data;
     }
     
     public int len(){
-        return in;
+        return in+1;
     }
 }

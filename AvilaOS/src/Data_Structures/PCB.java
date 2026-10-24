@@ -12,7 +12,7 @@ public class PCB {
     private int ID;
     protected String name;
     protected int pc;
-    protected String state;
+    protected EstadoProceso state = EstadoProceso.Nuevo;
     protected String type;
     protected float mem;
     protected int deadline;
@@ -20,11 +20,10 @@ public class PCB {
         //el numero menor es mas importante
     protected int prioridad;
     
-    public PCB(int id, String n, int p, String s, String t, float m){
+    public PCB(int id, String n, int p, String t, float m){
     ID = id;
     name =n;
     pc=p;
-    state=s;
     type=t;
     mem=m;
     deadline= 0;
@@ -43,10 +42,10 @@ public class PCB {
         return pc;
     }
 
-    public String getstate(){
+    public EstadoProceso getstate(){
         return state;
     }
-
+    
     public String gettype(){
         return type;
     }
@@ -61,6 +60,10 @@ public class PCB {
     
     public float getime(){
         return time;
+    }
+    
+    public void setstate(EstadoProceso x){
+        state = x;
     }
     
     public void settime(float t){

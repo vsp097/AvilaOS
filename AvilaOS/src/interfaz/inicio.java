@@ -345,7 +345,7 @@ public class inicio extends javax.swing.JFrame {
                 float r = Float.parseFloat(Ram1);
                 computador1.setCPUt(Cpu1);
                 computador1.setRAMt(r);
-                computador2.settype( (String) type1.getSelectedItem());
+                computador1.settype( (String) type1.getSelectedItem());
                 error1.setText("");
             }
             catch (NumberFormatException e){

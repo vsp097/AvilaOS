@@ -15,7 +15,8 @@ public class GlobalClock extends Thread{
     private long cycleDuration = 0; 
     private long cycle = 0;
     private boolean running = true;
-    private boolean paused = false;
+    private volatile boolean paused = false;
+    private final Object pauseLock = new Object();
     
     private Listas Clocklist;
     //vycky aqui crea el semaforo
@@ -23,22 +24,51 @@ public class GlobalClock extends Thread{
     @Override
     public void run(){
         while(running){
-            if (paused){
-                cycle++;
-                for(int i = 0; i < Clocklist.len(); i++){
-                    Computador l = (Computador) Clocklist.retornar(i);
-                    l.onTick(cycle);
+            synchronized (pauseLock) {
+                while (paused && running) {
+                    try {
+                        pauseLock.wait();
+                    } catch (InterruptedException e) {
+                        return;
+                    }
                 }
-                for(int i = 0; i < Clocklist.len(); i++){
-                    
-                }
-                try{Thread.sleep(cycleDuration);}
-            catch (InterruptedException e) { return;}
+            }
+            if (!running) break;
+
+            cycle++;
+            for (int i = 0; i < Clocklist.len(); i++) {
+                Computador c = (Computador) Clocklist.retornar(i);
+                c.onTick(cycle);
+            }
+
+            try {
+                Thread.sleep(cycleDuration);
+            } catch (InterruptedException e) {
+                return;
             }
         }
     }
-    
-    public void setcduration(long ms){
+    public void pausar() {
+        paused = true;
+    }
+
+    public void reanudar() {
+        synchronized (pauseLock) {
+            paused = false;
+            pauseLock.notifyAll();   
+        }
+    }
+
+    public void detener() {
+        running = false;
+        reanudar();               
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public void setcduration(long ms) {
         cycleDuration = ms;
     }
     

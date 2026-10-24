@@ -5,6 +5,8 @@
 package Data_Structures;
 
 import avilaos.ClockListener;
+import avilaos.FCFS;
+import avilaos.Planificador;
 
 /**
  *
@@ -16,6 +18,23 @@ public class Computador implements ClockListener{
     protected String CPU;
     protected float RAM;
     protected String datatype;
+    protected Cola<PCB> Nuevos, Listos, Bloqueados, Terminados = new Cola<PCB>();
+    protected PCB enEjecucion;
+
+    public PCB getEnEjecucion() {
+        return enEjecucion;
+    }
+    
+    protected Planificador planificador = new FCFS();
+
+    public void setPlanificador(Planificador p) {
+        planificador = p;
+    }
+
+    public Planificador getPlanificador() {
+        return planificador;
+    }
+    protected String modo;
     //semaforo
     
     public Computador(){
@@ -46,6 +65,14 @@ public class Computador implements ClockListener{
         
     }
     
+    public void setmode(String m){
+        modo = m;
+    }
+    
+    public String getmode(){
+        return modo;
+    }
+    
     public String getCPU(){
         return CPU;
     }
@@ -72,7 +99,7 @@ public class Computador implements ClockListener{
 
     @Override
     public void onTick(long cycle) {
-        //lo del semaforo vycky
+        
     }
     
 }
