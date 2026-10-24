@@ -23,7 +23,7 @@ public class GlobalClock extends Thread{
     @Override
     public void run(){
         while(running){
-            if (paused){
+            if (!paused){
                 cycle++;
                 for(int i = 0; i < Clocklist.len(); i++){
                     Computador l = (Computador) Clocklist.retornar(i);

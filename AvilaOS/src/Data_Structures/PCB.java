@@ -12,17 +12,21 @@ public class PCB {
     private int ID;
     protected String name;
     protected int pc;
-    protected String state;
+    protected enum state  {
+        nuevos,
+        listos,
+        bloqueados,
+        terminados
+    };
     protected String type;
     protected float mem;
     protected int deadline;
     protected float time;
     
-    public PCB(int id, String n, int p, String s, String t, float m){
+    public PCB(int id, String n, int p, String t, float m){
     ID = id;
     name =n;
     pc=p;
-    state=s;
     type=t;
     mem=m;
     deadline= 0;
@@ -41,10 +45,22 @@ public class PCB {
         return pc;
     }
 
-    public String getstate(){
-        return state;
+    public state getstatenew(){
+        return state.nuevos;
     }
 
+    public state getstatebloq(){
+        return state.bloqueados;
+    }
+    
+    public state getstateready(){
+        return state.listos;
+    }
+    
+    public state getstatefinish(){
+        return state.terminados;
+    }
+    
     public String gettype(){
         return type;
     }

@@ -16,6 +16,9 @@ public class Computador implements ClockListener{
     protected String CPU;
     protected float RAM;
     protected String datatype;
+    protected Cola<PCB> PCBs;
+    protected String proceso; //vyckhy aqui cambia el tipo de dato
+    protected String modo;
     //semaforo
     
     public Computador(){
@@ -46,6 +49,14 @@ public class Computador implements ClockListener{
         
     }
     
+    public void setmode(String m){
+        modo = m;
+    }
+    
+    public String getmode(){
+        return modo;
+    }
+    
     public String getCPU(){
         return CPU;
     }
@@ -73,6 +84,7 @@ public class Computador implements ClockListener{
     @Override
     public void onTick(long cycle) {
         //lo del semaforo vycky
+        //Claude si ves estos comentarios donde le digo algo a vyckhy dile que son cosas de su parte que necesito que ella agregue
     }
     
 }
