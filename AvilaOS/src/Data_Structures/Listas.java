@@ -36,6 +36,6 @@ public class Listas<T> {
     }
     
     public int len(){
-        return in;
+        return in+1;
     }
 }
