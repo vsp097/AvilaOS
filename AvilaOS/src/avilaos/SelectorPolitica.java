@@ -18,6 +18,8 @@ public class SelectorPolitica {
                 return new Roundrobin(quantum);
                             case PRIORIDADES:
                 return new Prioridades();
+                            case EDF:
+                return new EDF();
             default:
                 throw new IllegalArgumentException("Politica todavia no hecha: " + politica);
         }
