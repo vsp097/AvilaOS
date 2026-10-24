@@ -12,12 +12,7 @@ public class PCB {
     private int ID;
     protected String name;
     protected int pc;
-    protected enum state  {
-        nuevos,
-        listos,
-        bloqueados,
-        terminados
-    };
+    protected EstadoProceso state = EstadoProceso.Nuevo;
     protected String type;
     protected float mem;
     protected int deadline;
@@ -45,20 +40,8 @@ public class PCB {
         return pc;
     }
 
-    public state getstatenew(){
-        return state.nuevos;
-    }
-
-    public state getstatebloq(){
-        return state.bloqueados;
-    }
-    
-    public state getstateready(){
-        return state.listos;
-    }
-    
-    public state getstatefinish(){
-        return state.terminados;
+    public EstadoProceso getstate(){
+        return state;
     }
     
     public String gettype(){
@@ -75,6 +58,10 @@ public class PCB {
     
     public float getime(){
         return time;
+    }
+    
+    public void setstate(EstadoProceso x){
+        state = x;
     }
     
     public void settime(float t){

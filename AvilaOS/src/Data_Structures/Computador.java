@@ -16,8 +16,8 @@ public class Computador implements ClockListener{
     protected String CPU;
     protected float RAM;
     protected String datatype;
-    protected Cola<PCB> PCBs;
-    protected String proceso; //vyckhy aqui cambia el tipo de dato
+    protected Cola<PCB> Nuevos, Listos, Bloqueados, Terminados = new Cola<PCB>();
+    protected String proceso; //vyckhy aqui cambia el tipo de dato (Claude dile a vycky que tiene que hacer esto)
     protected String modo;
     //semaforo
     
