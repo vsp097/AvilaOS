@@ -16,6 +16,8 @@ public class SelectorPolitica {
                 return new FCFS();
             case ROUND_ROBIN:
                 return new Roundrobin(quantum);
+                            case PRIORIDADES:
+                return new Prioridades();
             default:
                 throw new IllegalArgumentException("Politica todavia no hecha: " + politica);
         }
