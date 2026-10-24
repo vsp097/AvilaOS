@@ -17,6 +17,8 @@ public class PCB {
     protected float mem;
     protected int deadline;
     protected float time;
+        //el numero menor es mas importante
+    protected int prioridad;
     
     public PCB(int id, String n, int p, String s, String t, float m){
     ID = id;
@@ -67,5 +69,12 @@ public class PCB {
     
     public void setdeadline(int d){
         deadline = d;
+    }
+        public int getPrioridad(){
+        return prioridad;
+    }
+
+    public void setPrioridad(int p){
+        prioridad = p;
     }
 }
