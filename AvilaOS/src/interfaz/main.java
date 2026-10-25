@@ -5,6 +5,8 @@
 package interfaz;
 
 import Data_Structures.Computador;
+import Data_Structures.Listas;
+import Data_Structures.Nodo;
 import avilaos.GlobalClock;
 import javax.swing.SwingUtilities;
 /**
@@ -26,6 +28,11 @@ public class main extends javax.swing.JFrame {
         initComponents();
         computador1 = c;
         computador2 =c2;
+        Nodo aux = new <Computador> Nodo(computador1);
+        Listas compus = new Listas(aux);
+        aux = new <Computador> Nodo(computador2);
+        compus.insertar(aux);
+        gC.setClocklist(compus);
         Cpu1.setText(c.getCPU());
         RAM1.setText((Float.toString(c.getRamt())));
         CPU2.setText(c2.getCPU());
@@ -130,10 +137,10 @@ public class main extends javax.swing.JFrame {
         jLabel6.setText("Sincronizador");
         jPanel1.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(232, 142, 180, 30));
 
-        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Listo", "Terminado", "Bloqueado", "Finalizado" }));
         jPanel1.add(jComboBox3, new org.netbeans.lib.awtextra.AbsoluteConstraints(630, 140, 80, 30));
 
-        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Listo", "Terminado", "Bloqueado", "Finalizado" }));
         jComboBox4.addActionListener(this::jComboBox4ActionPerformed);
         jPanel1.add(jComboBox4, new org.netbeans.lib.awtextra.AbsoluteConstraints(142, 142, 80, 30));
 
@@ -161,38 +168,18 @@ public class main extends javax.swing.JFrame {
         CPU2.setText(".");
         jPanel1.add(CPU2, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 70, 50, 20));
 
-        jList1.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         jScrollPane1.setViewportView(jList1);
 
         jPanel1.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(730, 190, 180, 300));
 
-        jList2.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         jScrollPane2.setViewportView(jList2);
 
         jPanel1.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 190, 180, 300));
 
-        jList3.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         jScrollPane3.setViewportView(jList3);
 
         jPanel1.add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 190, 180, 300));
 
-        jList4.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         jScrollPane4.setViewportView(jList4);
 
         jPanel1.add(jScrollPane4, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 190, 180, 300));

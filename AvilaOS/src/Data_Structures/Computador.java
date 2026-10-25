@@ -24,7 +24,24 @@ public class Computador implements ClockListener{
     protected Cola<PCB> Bloqueados = new Cola<>();
     protected Cola<PCB> Terminados = new Cola<>();
     protected PCB enEjecucion;
-
+    protected ModoCPU modo = ModoCPU.Usuario;
+    protected String nombre = "Computador";
+    protected LogEventos log;
+    protected int ciclosUsados = 0;
+    protected long ciclo = 0;
+    //cada cuanto pide e/s y cuanto dura
+    protected int cadaES = 3;
+    protected int duracionES = 2;
+    
+    
+    public Computador(){
+        CPU = null;
+        RAM = 0;
+        CPUt = null;
+        RAMt = 0;   
+        datatype = null;
+    }
+    
     public PCB getEnEjecucion() {
         return enEjecucion;
     }
@@ -37,22 +54,6 @@ public class Computador implements ClockListener{
 
     public Planificador getPlanificador() {
         return planificador;
-    }
-    protected ModoCPU modo = ModoCPU.Usuario;
-    protected String nombre = "Computador";
-    protected LogEventos log;
-    protected int ciclosUsados = 0;
-    protected long ciclo = 0;
-    //cada cuanto pide e/s y cuanto dura
-    protected int cadaES = 3;
-    protected int duracionES = 2;
-    
-    public Computador(){
-        CPU = null;
-        RAM = 0;
-        CPUt = null;
-        RAMt = 0;   
-        datatype = null;
     }
     
     public boolean isnull(){
