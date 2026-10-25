@@ -5,6 +5,7 @@
 package interfaz;
 
 import Data_Structures.Computador;
+import avilaos.GlobalClock;
 
 /**
  *
@@ -363,7 +364,9 @@ public class inicio extends javax.swing.JFrame {
         if (computador1.isnull() || computador2.isnull()){
             error3.setText("Complete la creacion de los componentes");
         }else{
-            main v2 = new main(computador1, computador2);
+            GlobalClock gc = new GlobalClock();
+            gc.setcduration(1000);
+            main v2 = new main(computador1, computador2, gc);
             v2.setVisible(true);
             this.dispose();
         }

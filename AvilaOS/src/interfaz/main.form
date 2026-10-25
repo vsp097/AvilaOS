@@ -122,10 +122,10 @@
           <Properties>
             <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
               <StringArray count="4">
-                <StringItem index="0" value="Item 1"/>
-                <StringItem index="1" value="Item 2"/>
-                <StringItem index="2" value="Item 3"/>
-                <StringItem index="3" value="Item 4"/>
+                <StringItem index="0" value="FCFS"/>
+                <StringItem index="1" value="EDF"/>
+                <StringItem index="2" value="Round Robin"/>
+                <StringItem index="3" value="Prioridades apropiadas"/>
               </StringArray>
             </Property>
           </Properties>
@@ -142,10 +142,10 @@
           <Properties>
             <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
               <StringArray count="4">
-                <StringItem index="0" value="Item 1"/>
-                <StringItem index="1" value="Item 2"/>
-                <StringItem index="2" value="Item 3"/>
-                <StringItem index="3" value="Item 4"/>
+                <StringItem index="0" value="FCFS"/>
+                <StringItem index="1" value="EDF"/>
+                <StringItem index="2" value="Round Robin"/>
+                <StringItem index="3" value="Prioridades apropiadas"/>
               </StringArray>
             </Property>
           </Properties>
@@ -317,11 +317,11 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel11">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Ciclos del Reloj:"/>
+            <Property name="text" type="java.lang.String" value="Cpu:"/>
           </Properties>
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-              <AbsoluteConstraints x="770" y="10" width="-1" height="-1"/>
+              <AbsoluteConstraints x="490" y="70" width="-1" height="-1"/>
             </Constraint>
           </Constraints>
         </Component>
@@ -351,7 +351,7 @@
           </Properties>
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-              <AbsoluteConstraints x="870" y="10" width="50" height="20"/>
+              <AbsoluteConstraints x="520" y="70" width="50" height="20"/>
             </Constraint>
           </Constraints>
         </Component>
@@ -491,21 +491,21 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel13">
           <Properties>
-            <Property name="text" type="java.lang.String" value="CPU:"/>
+            <Property name="text" type="java.lang.String" value="Ciclos del Reloj:"/>
           </Properties>
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-              <AbsoluteConstraints x="490" y="70" width="-1" height="-1"/>
+              <AbsoluteConstraints x="390" y="10" width="-1" height="-1"/>
             </Constraint>
           </Constraints>
         </Component>
-        <Component class="javax.swing.JLabel" name="CPU3">
+        <Component class="javax.swing.JLabel" name="clock">
           <Properties>
             <Property name="text" type="java.lang.String" value="."/>
           </Properties>
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-              <AbsoluteConstraints x="530" y="70" width="50" height="20"/>
+              <AbsoluteConstraints x="490" y="10" width="50" height="20"/>
             </Constraint>
           </Constraints>
         </Component>

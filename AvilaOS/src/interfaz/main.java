@@ -5,6 +5,8 @@
 package interfaz;
 
 import Data_Structures.Computador;
+import avilaos.GlobalClock;
+import javax.swing.SwingUtilities;
 /**
  *
  * @author diego
@@ -14,10 +16,13 @@ public class main extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(main.class.getName());
     private Computador computador1;
     private Computador computador2;
+    private GlobalClock gC;
     /**
      * Creates new form main
      */
-    public main(Data_Structures.Computador c, Computador c2) {
+    public main(Data_Structures.Computador c, Computador c2, GlobalClock g) {
+        gC =g;
+        gC.start();
         initComponents();
         computador1 = c;
         computador2 =c2;
@@ -25,6 +30,9 @@ public class main extends javax.swing.JFrame {
         RAM1.setText((Float.toString(c.getRamt())));
         CPU2.setText(c2.getCPU());
         RAM2.setText((Float.toString(c2.getRamt())));
+        gC.setClockListener(cycle ->
+            SwingUtilities.invokeLater(() -> clock.setText(String.valueOf(cycle)))
+        );
     }
 
     /**
@@ -73,7 +81,7 @@ public class main extends javax.swing.JFrame {
         jSeparator7 = new javax.swing.JSeparator();
         jSeparator8 = new javax.swing.JSeparator();
         jLabel13 = new javax.swing.JLabel();
-        CPU3 = new javax.swing.JLabel();
+        clock = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         vista1 = new javax.swing.JMenu();
         vista2 = new javax.swing.JMenu();
@@ -96,10 +104,10 @@ public class main extends javax.swing.JFrame {
         jLabel2.setText("Computador 2");
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 30, 260, 30));
 
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "FCFS", "EDF", "Round Robin", "Prioridades apropiadas" }));
         jPanel1.add(jComboBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(840, 30, 90, 30));
 
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "FCFS", "EDF", "Round Robin", "Prioridades apropiadas" }));
         jPanel1.add(jComboBox2, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 30, 90, 30));
         jPanel1.add(jSeparator3, new org.netbeans.lib.awtextra.AbsoluteConstraints(2, 135, 930, 10));
         jPanel1.add(jSeparator4, new org.netbeans.lib.awtextra.AbsoluteConstraints(2, 172, 940, -1));
@@ -141,8 +149,8 @@ public class main extends javax.swing.JFrame {
         Cpu1.setText(".");
         jPanel1.add(Cpu1, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 70, 50, 20));
 
-        jLabel11.setText("Ciclos del Reloj:");
-        jPanel1.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(770, 10, -1, -1));
+        jLabel11.setText("Cpu:");
+        jPanel1.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 70, -1, -1));
 
         jLabel12.setText("Memoria Principal (RAM):");
         jPanel1.add(jLabel12, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 100, -1, -1));
@@ -151,7 +159,7 @@ public class main extends javax.swing.JFrame {
         jPanel1.add(RAM2, new org.netbeans.lib.awtextra.AbsoluteConstraints(650, 100, 50, 20));
 
         CPU2.setText(".");
-        jPanel1.add(CPU2, new org.netbeans.lib.awtextra.AbsoluteConstraints(870, 10, 50, 20));
+        jPanel1.add(CPU2, new org.netbeans.lib.awtextra.AbsoluteConstraints(520, 70, 50, 20));
 
         jList1.setModel(new javax.swing.AbstractListModel<String>() {
             String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
@@ -191,11 +199,11 @@ public class main extends javax.swing.JFrame {
         jPanel1.add(jSeparator7, new org.netbeans.lib.awtextra.AbsoluteConstraints(-10, 60, 950, 10));
         jPanel1.add(jSeparator8, new org.netbeans.lib.awtextra.AbsoluteConstraints(-10, 30, 930, 10));
 
-        jLabel13.setText("CPU:");
-        jPanel1.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 70, -1, -1));
+        jLabel13.setText("Ciclos del Reloj:");
+        jPanel1.add(jLabel13, new org.netbeans.lib.awtextra.AbsoluteConstraints(390, 10, -1, -1));
 
-        CPU3.setText(".");
-        jPanel1.add(CPU3, new org.netbeans.lib.awtextra.AbsoluteConstraints(530, 70, 50, 20));
+        clock.setText(".");
+        jPanel1.add(clock, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 10, 50, 20));
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
 
@@ -241,10 +249,10 @@ public class main extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel CPU2;
-    private javax.swing.JLabel CPU3;
     private javax.swing.JLabel Cpu1;
     private javax.swing.JLabel RAM1;
     private javax.swing.JLabel RAM2;
+    private javax.swing.JLabel clock;
     private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JComboBox<String> jComboBox2;
     private javax.swing.JComboBox<String> jComboBox3;
