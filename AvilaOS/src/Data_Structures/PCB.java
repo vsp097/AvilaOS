@@ -80,4 +80,64 @@ public class PCB {
     public void setPrioridad(int p){
         prioridad = p;
     }
+    
+        //datos para ejecutar el proceso
+    protected int paso = 0;
+    protected avilaos.Buffer buffer;
+    protected int elementos;
+    protected int cadaCuantos = 1;
+    protected int contador = 0;
+    protected int espera = 0;
+
+    public void avanzarPC() {
+        pc++;
+    }
+
+    public int getPaso() {
+        return paso;
+    }
+
+    public void setPaso(int p) {
+        paso = p;
+    }
+
+    public avilaos.Buffer getBuffer() {
+        return buffer;
+    }
+
+    public void setBuffer(avilaos.Buffer b) {
+        buffer = b;
+    }
+
+    public int getElementos() {
+        return elementos;
+    }
+
+    public void setElementos(int e) {
+        elementos = e;
+    }
+
+    public int getCadaCuantos() {
+        return cadaCuantos;
+    }
+
+    public void setCadaCuantos(int c) {
+        cadaCuantos = c;
+    }
+
+    public int getContador() {
+        return contador;
+    }
+
+    public void setContador(int c) {
+        contador = c;
+    }
+
+    public int getEspera() {
+        return espera;
+    }
+
+    public void setEspera(int e) {
+        espera = e;
+    }
 }
