@@ -177,4 +177,11 @@ public class Buffer {
             llave.release();
         }
     }
+    
+    //si el semaforo desperto a alguien lo marca como listo para que su computador lo pase a la cola de listos
+    private void despertar(PCB proceso) {
+        if (proceso != null) {
+            proceso.setstate(EstadoProceso.Listo);
+        }
+    }
 }
