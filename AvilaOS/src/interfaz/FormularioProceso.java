@@ -4,6 +4,12 @@
  */
 package interfaz;
 
+import Data_Structures.PCB;
+import avilaos.SolicitudProceso;
+import avilaos.Validaciones;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author vyckh
@@ -13,8 +19,60 @@ public class FormularioProceso extends javax.swing.JPanel {
     /**
      * Creates new form FormularioProceso
      */
+      //quien quiera recibir los procesos que se crean implementa esto
+    public interface ProcesoCreadoListener {
+        void procesoCreado(SolicitudProceso solicitud);
+    }
+
+    //contador para darle un id distinto a cada proceso
+    private static int contadorId = 1;
+
+    private ProcesoCreadoListener listener;
+
+    //este constructor vacio lo dejo por si otra ventana ya lo usa
     public FormularioProceso() {
+        this(2, new String[0], null);
+    }
+
+    //recibe cuantos computadores hay y los nombres de los buffers que existen
+    public FormularioProceso(int cantidadComputadores, String[] nombresBuffers, ProcesoCreadoListener listener) {
         initComponents();
+        this.listener = listener;
+        if (nombresBuffers == null) {
+            nombresBuffers = new String[0];
+        }
+        if (cantidadComputadores < 1) {
+            cantidadComputadores = 1;
+        }
+
+        cmbTipo.setModel(new DefaultComboBoxModel<>(new String[]{"CPU Bound", "I/O Bound", "Productor", "Consumidor"}));
+
+        String[] computadores = new String[cantidadComputadores];
+        for (int i = 0; i < cantidadComputadores; i++) {
+            computadores[i] = "Computador " + (i + 1);
+        }
+        cmbComputador.setModel(new DefaultComboBoxModel<>(computadores));
+        cmbBuffer.setModel(new DefaultComboBoxModel<>(nombresBuffers));
+
+        actualizarCampos();
+    }
+
+    private boolean esProductorOConsumidor() {
+        String tipo = (String) cmbTipo.getSelectedItem();
+        return tipo.equals("Productor") || tipo.equals("Consumidor");
+    }
+
+    //muestra solo los campos que le tocan al tipo de proceso escogido
+    private void actualizarCampos() {
+        boolean prodCons = esProductorOConsumidor();
+        lblCiclos.setVisible(!prodCons);
+        txtCiclos.setVisible(!prodCons);
+        lblBuffer.setVisible(prodCons);
+        cmbBuffer.setVisible(prodCons);
+        lblCadaCiclos.setVisible(prodCons);
+        txtCadaCiclos.setVisible(prodCons);
+        lblElementos.setVisible(prodCons);
+        txtElementos.setVisible(prodCons);
     }
 
     /**
@@ -26,19 +84,342 @@ public class FormularioProceso extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
-        );
-    }// </editor-fold>//GEN-END:initComponents
+        jButton1 = new javax.swing.JButton();
+        jButton2 = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        txtNombre = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        txtInstrucciones = new javax.swing.JTextField();
+        txtMemoria = new javax.swing.JTextField();
+        txtPrioridad = new javax.swing.JTextField();
+        txtDeadline = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        cmbTipo = new javax.swing.JComboBox<>();
+        jLabel7 = new javax.swing.JLabel();
+        cmbComputador = new javax.swing.JComboBox<>();
+        btnAgregar = new javax.swing.JButton();
+        lblCiclos = new javax.swing.JLabel();
+        lblBuffer = new javax.swing.JLabel();
+        lblCadaCiclos = new javax.swing.JLabel();
+        lblElementos = new javax.swing.JLabel();
+        txtCiclos = new javax.swing.JTextField();
+        txtCadaCiclos = new javax.swing.JTextField();
+        txtElementos = new javax.swing.JTextField();
+        cmbBuffer = new javax.swing.JComboBox<>();
+
+        jButton1.setText("jButton1");
+
+        jButton2.setText("jButton2");
+
+        jLabel1.setText("Nombre");
+
+        txtNombre.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtNombreActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setText("Cantidad de instrucciones");
+
+        jLabel3.setText("Memoria que requiere");
+
+        jLabel4.setText("Prioridad (1 es la mayor)");
+
+        jLabel5.setText("Deadline (0 = sin deadline)");
+
+        txtInstrucciones.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtInstruccionesActionPerformed(evt);
+            }
+        });
+
+        txtPrioridad.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtPrioridadActionPerformed(evt);
+            }
+        });
+
+        txtDeadline.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtDeadlineActionPerformed(evt);
+            }
+        });
+
+        jLabel6.setText("Tipo de proceso");
+
+        cmbTipo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "CPU Bound", "I/O Bound", "Productor", "Consumidor" }));
+        cmbTipo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbTipoActionPerformed(evt);
+            }
+        });
+
+        jLabel7.setText("Computador\\");
+
+            cmbComputador.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Computador 1", "Computador 2" }));
+            cmbComputador.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent evt) {
+                    cmbComputadorActionPerformed(evt);
+                }
+            });
+
+            btnAgregar.setText("Agregar");
+            btnAgregar.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent evt) {
+                    btnAgregarActionPerformed(evt);
+                }
+            });
+
+            lblCiclos.setText("Ciclos para terminar");
+
+            lblBuffer.setText("Buffer");
+
+            lblCadaCiclos.setText("Cada cuántos ciclos");
+
+            lblElementos.setText("Elementos que necesita");
+
+            cmbBuffer.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+            cmbBuffer.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent evt) {
+                    cmbBufferActionPerformed(evt);
+                }
+            });
+
+            javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+            this.setLayout(layout);
+            layout.setHorizontalGroup(
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                    .addContainerGap()
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                            .addComponent(lblCadaCiclos)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(layout.createSequentialGroup()
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(btnAgregar)
+                                    .addGap(16, 16, 16))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtCadaCiclos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addGroup(layout.createSequentialGroup()
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jLabel6)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(cmbTipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jLabel1)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtNombre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jLabel2)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtInstrucciones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jLabel3)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtMemoria, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jLabel4)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtPrioridad, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jLabel5)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtDeadline, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(jLabel7)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(cmbComputador, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGroup(layout.createSequentialGroup()
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(lblElementos)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(txtElementos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(lblCiclos)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                    .addComponent(txtCiclos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(layout.createSequentialGroup()
+                                    .addComponent(lblBuffer)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(cmbBuffer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGap(0, 548, Short.MAX_VALUE))))
+            );
+            layout.setVerticalGroup(
+                layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                    .addContainerGap()
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel1)
+                        .addComponent(txtNombre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel2)
+                        .addComponent(txtInstrucciones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel3)
+                        .addComponent(txtMemoria, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel4)
+                        .addComponent(txtPrioridad, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel5)
+                        .addComponent(txtDeadline, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGap(9, 9, 9)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(cmbTipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addComponent(cmbComputador, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel7))
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addGroup(layout.createSequentialGroup()
+                            .addGap(0, 0, Short.MAX_VALUE)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(btnAgregar)
+                                .addComponent(txtElementos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(layout.createSequentialGroup()
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(lblCiclos)
+                                .addComponent(txtCiclos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(lblBuffer)
+                                .addComponent(cmbBuffer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(lblCadaCiclos)
+                                .addComponent(txtCadaCiclos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(lblElementos, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(0, 7, Short.MAX_VALUE)))
+                    .addContainerGap())
+            );
+        }// </editor-fold>//GEN-END:initComponents
+
+    private void txtNombreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNombreActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtNombreActionPerformed
+
+    private void txtInstruccionesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtInstruccionesActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtInstruccionesActionPerformed
+
+    private void txtPrioridadActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPrioridadActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtPrioridadActionPerformed
+
+    private void txtDeadlineActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDeadlineActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtDeadlineActionPerformed
+
+    private void cmbTipoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbTipoActionPerformed
+        actualizarCampos();
+    }//GEN-LAST:event_cmbTipoActionPerformed
+
+    private void cmbComputadorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbComputadorActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbComputadorActionPerformed
+
+    private void btnAgregarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarActionPerformed
+                try {
+            //leo cada campo con las validaciones, si alguno esta mal salta al catch
+            String nombre = Validaciones.leerTexto(txtNombre.getText(), "Nombre", 30);
+            int instrucciones = Validaciones.leerEntero(txtInstrucciones.getText(), "Cantidad de instrucciones", 1, 100000);
+            float memoria = Validaciones.leerDecimal(txtMemoria.getText(), "Memoria", 1, 100000);
+            int prioridad = Validaciones.leerEntero(txtPrioridad.getText(), "Prioridad", 1, 10);
+            int deadline = Validaciones.leerEntero(txtDeadline.getText(), "Deadline", 0, 100000);
+            String tipo = (String) cmbTipo.getSelectedItem();
+            int computador = cmbComputador.getSelectedIndex() + 1;
+
+            int ciclos = 0;
+            int buffer = -1;
+            int cadaCiclos = 0;
+            int elementos = 0;
+
+            //los campos que se leen dependen del tipo de proceso
+            if (esProductorOConsumidor()) {
+                if (cmbBuffer.getItemCount() == 0) {
+                    throw new IllegalArgumentException("Primero hay que crear un buffer");
+                }
+                buffer = cmbBuffer.getSelectedIndex();
+                cadaCiclos = Validaciones.leerEntero(txtCadaCiclos.getText(), "Cada cuantos ciclos", 1, 1000);
+                elementos = Validaciones.leerEntero(txtElementos.getText(), "Elementos que necesita", 1, 100000);
+            } else {
+                ciclos = Validaciones.leerEntero(txtCiclos.getText(), "Ciclos para terminar", 1, 100000);
+            }
+
+            //armo el pcb, lo que no recibe el constructor va con set
+            PCB pcb = new PCB(contadorId, nombre, 0, tipo, memoria);
+            contadorId++;
+            pcb.setPrioridad(prioridad);
+            pcb.setdeadline(deadline);
+            pcb.settime(instrucciones);
+
+            SolicitudProceso solicitud = new SolicitudProceso(pcb, computador, buffer, ciclos, cadaCiclos, elementos);
+            if (listener != null) {
+                listener.procesoCreado(solicitud);
+            }
+            JOptionPane.showMessageDialog(this, "Proceso " + nombre + " creado");
+            limpiar();
+        } catch (IllegalArgumentException e) {
+            //dato invalido: aviso y la ventana sigue abierta
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Dato invalido", JOptionPane.WARNING_MESSAGE);
+        }
+    }//GEN-LAST:event_btnAgregarActionPerformed
+    private void limpiar() {
+        txtNombre.setText("");
+        txtInstrucciones.setText("");
+        txtMemoria.setText("");
+        txtPrioridad.setText("");
+        txtDeadline.setText("");
+        txtCiclos.setText("");
+        txtCadaCiclos.setText("");
+        txtElementos.setText("");
+    }
+    private void cmbBufferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbBufferActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbBufferActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnAgregar;
+    private javax.swing.JComboBox<String> cmbBuffer;
+    private javax.swing.JComboBox<String> cmbComputador;
+    private javax.swing.JComboBox<String> cmbTipo;
+    private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel lblBuffer;
+    private javax.swing.JLabel lblCadaCiclos;
+    private javax.swing.JLabel lblCiclos;
+    private javax.swing.JLabel lblElementos;
+    private javax.swing.JTextField txtCadaCiclos;
+    private javax.swing.JTextField txtCiclos;
+    private javax.swing.JTextField txtDeadline;
+    private javax.swing.JTextField txtElementos;
+    private javax.swing.JTextField txtInstrucciones;
+    private javax.swing.JTextField txtMemoria;
+    private javax.swing.JTextField txtNombre;
+    private javax.swing.JTextField txtPrioridad;
     // End of variables declaration//GEN-END:variables
 }
