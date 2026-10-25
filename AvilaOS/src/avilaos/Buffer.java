@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package avilaos;
-
+import Data_Structures.EstadoProceso;
 import Data_Structures.PCB;
 import java.util.concurrent.Semaphore;
 
@@ -82,13 +82,12 @@ public class Buffer {
             case 2:
                 insertar(elemento);
                 return false;
-            case 3:
-                mutex.semaSignal();
+                case 3:
+                despertar(mutex.semaSignal());
                 return false;
             case 4:
-                lleno.semaSignal();
-                return false;
-        }
+                despertar(lleno.semaSignal());
+                return false;        }
         return false;
     }
     
@@ -103,10 +102,10 @@ public class Buffer {
                 extraer();
                 return false;
             case 3:
-                mutex.semaSignal();
+                despertar(mutex.semaSignal());
                 return false;
             case 4:
-                vacio.semaSignal();
+                despertar(vacio.semaSignal());
                 return false;
         }
         return false;
@@ -176,6 +175,13 @@ public class Buffer {
             return (posicion - salida + capacidad) % capacidad < cantidad;
         } finally {
             llave.release();
+        }
+    }
+    
+    //si el semaforo desperto a alguien lo marca como listo para que su computador lo pase a la cola de listos
+    private void despertar(PCB proceso) {
+        if (proceso != null) {
+            proceso.setstate(EstadoProceso.Listo);
         }
     }
 }
