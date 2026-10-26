@@ -8,6 +8,7 @@ import avilaos.ClockListener;
 import avilaos.FCFS;
 import avilaos.Planificador;
 import avilaos.LogEventos;
+import avilaos.Metricas;
 
 /**
  *
@@ -32,11 +33,22 @@ public class Computador implements ClockListener{
     //cada cuanto pide e/s y cuanto dura
     protected int cadaES = 3;
     protected int duracionES = 2;
+
+        //las metricas del sistema (una sola para todos) y el numero de este computador (0 es el primero)
+    protected Metricas metricas;
+    protected int indice = 0;
+
+    public void setMetricas(Metricas m, int i) {
+        metricas = m;
+        indice = i;
+    }
+
     //ciclos que tarda la red
     protected int retrasoRed = 2;
 
     public void setRetrasoRed(int r) {
         retrasoRed = r;
+
     }
     
     
@@ -147,6 +159,8 @@ public class Computador implements ClockListener{
     //un proceso nuevo entra a la cola de nuevos y espera a que haya RAM
     public void agregarProceso(PCB p) {
         p.setstate(EstadoProceso.Nuevo);
+                p.setLlegada(ciclo);
+        p.setTuvoDeadline(p.getdeadline() > 0);
         Nuevos.Encolar(p);
         registrar("Proceso " + p.getname() + " llega a la cola de nuevos");
     }
@@ -188,9 +202,15 @@ public class Computador implements ClockListener{
         if (enEjecucion == null) {
             elegir();
         }
-        if (enEjecucion == null) {
+                if (enEjecucion == null) {
             modo = ModoCPU.SO;
+            if (metricas != null) {
+                metricas.registrarCiclo(indice, false);
+            }
             return;
+        }
+        if (metricas != null) {
+            metricas.registrarCiclo(indice, true);
         }
         ejecutar();
     }
@@ -234,6 +254,12 @@ public class Computador implements ClockListener{
             p.setstate(EstadoProceso.Ejecucion);
             enEjecucion = p;
             ciclosUsados = 0;
+                        if (!p.getYaEjecuto()) {
+                p.setYaEjecuto(true);
+                if (metricas != null) {
+                    metricas.registrarRespuesta(indice, ciclo - p.getLlegada());
+                }
+            }
             registrar(nombre + " selecciona el proceso " + p.getname());
         }
     }
@@ -242,6 +268,7 @@ public class Computador implements ClockListener{
     private void ejecutar() {
         PCB p = enEjecucion;
         ciclosUsados++;
+                p.sumarCicloCPU();
         p.avanzarPC();
         String tipo = p.gettype();
         if (tipo.equals("Productor") || tipo.equals("Consumidor")) {
@@ -320,13 +347,24 @@ public class Computador implements ClockListener{
         }
     }
  
-    //el proceso pasa a terminados y libera su ram
+       //el proceso pasa a terminados y libera su ram
     private void terminar(PCB p, String motivo) {
         p.setstate(EstadoProceso.Terminado);
         Terminados.Encolar(p);
         RAM += p.getmem();
         registrar("Proceso " + p.getname() + " termina: " + motivo);
+        //si tenia deadline y llego a 0, se le acabo el tiempo y no cuenta como completado
+        boolean vencio = p.getTuvoDeadline() && p.getdeadline() == 0;
+        if (metricas != null) {
+            if (!vencio) {
+                metricas.registrarTermino(indice, p.getCiclosCPU(), ciclo - p.getLlegada());
+            }
+            if (p.getTuvoDeadline()) {
+                metricas.registrarDeadline(indice, !vencio);
+            }
+        }
     }
+    
     
         //baja el deadline de los procesos que tienen uno y termina los que llegan a 0
     private void revisarDeadlines() {
