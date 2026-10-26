@@ -299,6 +299,47 @@ public class Computador implements ClockListener{
         RAM += p.getmem();
         registrar("Proceso " + p.getname() + " termina: " + motivo);
     }
+    
+        //baja el deadline de los procesos que tienen uno y termina los que llegan a 0
+    private void revisarDeadlines() {
+        if (enEjecucion != null && bajarDeadline(enEjecucion)) {
+            terminar(enEjecucion, "se le acabo el deadline");
+            enEjecucion = null;
+        }
+        Cola<PCB> siguen = new Cola<>();
+        PCB p = Listos.Desencolar();
+        while (p != null) {
+            if (bajarDeadline(p)) {
+                terminar(p, "se le acabo el deadline");
+            } else {
+                siguen.Encolar(p);
+            }
+            p = Listos.Desencolar();
+        }
+        moverTodos(siguen, Listos);
+
+        //de los bloqueados solo reviso los que estan en E/S
+        siguen = new Cola<>();
+        p = Bloqueados.Desencolar();
+        while (p != null) {
+            if (p.getEspera() > 0 && bajarDeadline(p)) {
+                terminar(p, "se le acabo el deadline");
+            } else {
+                siguen.Encolar(p);
+            }
+            p = Bloqueados.Desencolar();
+        }
+        moverTodos(siguen, Bloqueados);
+    }
+
+    //le baja 1 al deadline y dice si llego a 0, si no tenia deadline (0) no hace nada
+    private boolean bajarDeadline(PCB p) {
+        if (p.getdeadline() <= 0) {
+            return false;
+        }
+        p.setdeadline(p.getdeadline() - 1);
+        return p.getdeadline() == 0;
+    }
  
     //pasa todos los procesos de una cola a otra sin cambiar el orden
     private void moverTodos(Cola<PCB> desde, Cola<PCB> hacia) {

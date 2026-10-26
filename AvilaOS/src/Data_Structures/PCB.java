@@ -140,4 +140,60 @@ public class PCB {
     public void setEspera(int e) {
         espera = e;
     }
+    
+        //datos para las metricas
+    protected long llegada = 0;
+    protected boolean tuvoDeadline = false;
+    protected boolean yaEjecuto = false;
+    protected int ciclosCPU = 0;
+    protected int indiceBuffer = -1;
+    protected long cicloBloqueo = 0;
+
+    public long getLlegada() {
+        return llegada;
+    }
+
+    public void setLlegada(long l) {
+        llegada = l;
+    }
+
+    public boolean getTuvoDeadline() {
+        return tuvoDeadline;
+    }
+
+    public void setTuvoDeadline(boolean t) {
+        tuvoDeadline = t;
+    }
+
+    public boolean getYaEjecuto() {
+        return yaEjecuto;
+    }
+
+    public void setYaEjecuto(boolean y) {
+        yaEjecuto = y;
+    }
+
+    public int getCiclosCPU() {
+        return ciclosCPU;
+    }
+
+    public void sumarCicloCPU() {
+        ciclosCPU++;
+    }
+
+    public int getIndiceBuffer() {
+        return indiceBuffer;
+    }
+
+    public void setIndiceBuffer(int i) {
+        indiceBuffer = i;
+    }
+
+    public long getCicloBloqueo() {
+        return cicloBloqueo;
+    }
+
+    public void setCicloBloqueo(long c) {
+        cicloBloqueo = c;
+    }
 }
