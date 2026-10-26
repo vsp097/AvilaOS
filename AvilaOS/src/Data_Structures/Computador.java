@@ -47,6 +47,7 @@ public class Computador implements ClockListener{
     //cada cuanto pide e/s y cuanto dura
     protected int cadaES = 3;
     protected int duracionES = 2;
+
         //las metricas del sistema (una sola para todos) y el numero de este computador (0 es el primero)
     protected Metricas metricas;
     protected int indice = 0;
@@ -54,6 +55,14 @@ public class Computador implements ClockListener{
     public void setMetricas(Metricas m, int i) {
         metricas = m;
         indice = i;
+    }
+
+    //ciclos que tarda la red
+    protected int retrasoRed = 2;
+
+    public void setRetrasoRed(int r) {
+        retrasoRed = r;
+
     }
     
     public Computador(){
@@ -293,6 +302,15 @@ public class Computador implements ClockListener{
                 enEjecucion = null;
                 return;
             }
+        }
+                //si el buffer esta en otro computador espera la red
+        if (paso == 2 && b.estaLejos(this) && retrasoRed > 0) {
+            p.setEspera(retrasoRed);
+            p.setstate(EstadoProceso.Bloqueado);
+            Bloqueados.Encolar(p);
+            registrar("Proceso " + p.getname() + " accede al buffer " + b.getNombre() + " de forma remota");
+            enEjecucion = null;
+            return;
         }
         if (seBloqueo) {
             p.setstate(EstadoProceso.Bloqueado);
