@@ -6,7 +6,7 @@ package avilaos;
 import Data_Structures.EstadoProceso;
 import Data_Structures.PCB;
 import java.util.concurrent.Semaphore;
-
+import Data_Structures.Computador;
 /**
  *
  * @author vyckh
@@ -27,6 +27,7 @@ public class Buffer {
     private Semaforo lleno;
     private Semaforo mutex;
     private Semaphore llave = new Semaphore(1);
+    private Computador computador;
 
     
     public Buffer(String nombre, int capacidad) {
@@ -177,7 +178,24 @@ public class Buffer {
             llave.release();
         }
     }
-    
+    //pone el buffer en un computador y le quita ram
+    public boolean setComputador(Computador c) {
+        if (c.getRam() < capacidad) {
+            return false;
+        }
+        computador = c;
+        c.useRam(capacidad);
+        return true;
+    }
+
+    public Computador getComputador() {
+        return computador;
+    }
+
+    //true si el proceso esta en otro computador
+    public boolean estaLejos(Computador c) {
+        return computador != null && computador != c;
+    }
     //si el semaforo desperto a alguien lo marca como listo para que su computador lo pase a la cola de listos
     private void despertar(PCB proceso) {
         if (proceso != null) {
