@@ -383,6 +383,13 @@ public class FormularioProceso extends javax.swing.JPanel {
         txtCadaCiclos.setText("");
         txtElementos.setText("");
     }
+        //cuando se crea un buffer nuevo, la ventana principal llama esto para que aparezca en la lista
+    public void actualizarBuffers(String[] nombresBuffers) {
+        if (nombresBuffers == null) {
+            nombresBuffers = new String[0];
+        }
+        cmbBuffer.setModel(new DefaultComboBoxModel<>(nombresBuffers));
+    }
     private void cmbBufferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbBufferActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_cmbBufferActionPerformed
