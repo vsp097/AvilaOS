@@ -46,6 +46,24 @@ public class Computador implements ClockListener{
         return enEjecucion;
     }
     
+        public synchronized void admitir() {
+        Cola<PCB> siguen = new Cola<>();
+        PCB p = Nuevos.Desencolar();
+        while (p != null) {
+            if (p.getmem() <= RAM) {
+                useRam(p.getmem());
+                p.setstate(EstadoProceso.Listo);
+                Listos.Encolar(p);
+                registrar("Proceso " + p.getname() + " es admitido y pasa a listos");
+            } else {
+                siguen.Encolar(p);
+            }
+            p = Nuevos.Desencolar();
+        }
+        moverTodos(siguen, Nuevos);
+    }
+
+    
     protected Planificador planificador = new FCFS();
 
     public void setPlanificador(Planificador p) {
@@ -111,8 +129,7 @@ public class Computador implements ClockListener{
     public Cola<PCB> getTerminados() {
         return Terminados;
     }
-
-    //el PC que se muestra en la ventana es el del proceso que esta en la CPU
+    
     public int getPC() {
         if (enEjecucion == null) {
             return 0;
@@ -120,7 +137,6 @@ public class Computador implements ClockListener{
         return enEjecucion.getpc();
     }
 
-    //un proceso nuevo entra a la cola de nuevos y espera a que haya RAM
     public void agregarProceso(PCB p) {
         p.setstate(EstadoProceso.Nuevo);
         Nuevos.Encolar(p);
@@ -151,13 +167,11 @@ public class Computador implements ClockListener{
         RAM-= n;
     }
 
-       //lo que hace el computador en cada ciclo del reloj
-    @Override
+      @Override
     public void onTick(long cycle) {
         ciclo = cycle;
-        //Diego aqui va lo de adminitr q que por eso sale error
+        admitir();
         revisarBloqueados();
-        //Andrea 
         if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
             expropiese();
         }
