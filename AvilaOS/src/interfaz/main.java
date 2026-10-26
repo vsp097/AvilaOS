@@ -4,6 +4,8 @@
  */
 package interfaz;
 
+import Data_Structures.Cola;
+import Data_Structures.PCB;
 import Data_Structures.Computador;
 import Data_Structures.Listas;
 import Data_Structures.Nodo;
@@ -42,9 +44,12 @@ public class main extends javax.swing.JFrame {
         RAM2.setText((Float.toString(c2.getRamt())));
  
         //3. los menus de scheduler cambian la politica mientras corre la simulacion
-        jComboBox1.addActionListener(e -> cambiarPolitica(computador1, jComboBox1.getSelectedIndex()));
-        jComboBox2.addActionListener(e -> cambiarPolitica(computador2, jComboBox2.getSelectedIndex()));
- 
+            //los dos desplegables de Scheduler: el 4 es del Computador 1 y el 3 del Computador 2
+           String[] nombresPoliticas = {"FCFS", "EDF", "Round Robin", "Prioridades"};
+           jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(nombresPoliticas));
+           jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(nombresPoliticas));
+           jComboBox4.addActionListener(e -> cambiarPolitica(computador1, jComboBox4.getSelectedIndex()));
+           jComboBox3.addActionListener(e -> cambiarPolitica(computador2, jComboBox3.getSelectedIndex()));
         gC.setClockListener(this::alCiclo);
         //el reloj arranca al final, cuando ya tiene todo conectado
         if (!gC.isAlive()) {
@@ -90,9 +95,7 @@ public class main extends javax.swing.JFrame {
             mostrar(jList2, listos);
             mostrar(jList3, bloqueados);
             mostrar(jList4, terminados);
-            panelBuffer.actualizar();
-            panelLog.actualizar();
-            panelPCB.mostrar();
+            
 
         });
     }
