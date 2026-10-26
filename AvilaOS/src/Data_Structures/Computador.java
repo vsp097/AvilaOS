@@ -239,6 +239,7 @@ public class Computador implements ClockListener{
         }
         if (tipo.equals("I/O Bound") && p.getpc() % cadaES == 0) {
             p.setEspera(duracionES);
+            p.setMotivo("E/S");
             p.setstate(EstadoProceso.Bloqueado);
             Bloqueados.Encolar(p);
             registrar("Proceso " + p.getname() + " pide E/S y se bloquea");
@@ -279,6 +280,7 @@ public class Computador implements ClockListener{
                 //si el buffer esta en otro computador espera la red
         if (paso == 2 && b.estaLejos(this) && retrasoRed > 0) {
             p.setEspera(retrasoRed);
+            p.setMotivo("red (buffer " + b.getNombre() + ")");
             p.setstate(EstadoProceso.Bloqueado);
             Bloqueados.Encolar(p);
             registrar("Proceso " + p.getname() + " accede al buffer " + b.getNombre() + " de forma remota");
@@ -288,7 +290,14 @@ public class Computador implements ClockListener{
         if (seBloqueo) {
             p.setstate(EstadoProceso.Bloqueado);
             Bloqueados.Encolar(p);
-            registrar("Proceso " + p.getname() + " se bloquea en el buffer " + b.getNombre());
+            String sem = "mutex";
+            if (paso == 0 && p.gettype().equals("Productor")) {
+                sem = "vacio";
+            } else if (paso == 0) {
+                sem = "lleno";
+            }
+            p.setMotivo("semaforo " + sem + " (buffer " + b.getNombre() + ")");
+            registrar("Proceso " + p.getname() + " se bloquea en el semaforo '" + sem + "' del buffer " + b.getNombre());
             enEjecucion = null;
         }
     }

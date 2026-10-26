@@ -141,7 +141,7 @@ public class PCB {
         espera = e;
     }
     
-        //datos para las metricas
+    //datos para las metricas
     protected long llegada = 0;
     protected boolean tuvoDeadline = false;
     protected boolean yaEjecuto = false;
@@ -195,5 +195,15 @@ public class PCB {
 
     public void setCicloBloqueo(long c) {
         cicloBloqueo = c;
+    }
+    //si es e/s o red o semaofro
+    protected String motivo = "";
+
+    public String getMotivo() {
+        return motivo;
+    }
+
+    public void setMotivo(String m) {
+        motivo = m;
     }
 }

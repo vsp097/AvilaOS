@@ -7,9 +7,12 @@ package interfaz;
 import avilaos.Buffer;
 import java.awt.Color;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
+import javax.swing.Timer;
 
 /**
  *
@@ -22,11 +25,16 @@ public class PanelBuffer extends javax.swing.JPanel {
      */
        private Buffer buffer;
     private JLabel[] casillas;
+    //para refrescar el panel solo
+    private Timer reloj;
+    //fondo de las casillas que tienen algo, un gris apenas mas oscuro que el blanco
+    private static final Color OCUPADA = new Color(222, 222, 222);
 
     //recibe el buffer y crea una casilla por cada espacio
     public PanelBuffer(Buffer buffer) {
         initComponents();
         this.buffer = buffer;
+        //las casillas van una al lado de la otra
         fila.setLayout(new GridLayout(1, buffer.getCapacidad(), 4, 4));
         casillas = new JLabel[buffer.getCapacidad()];
         for (int i = 0; i < casillas.length; i++) {
@@ -36,35 +44,84 @@ public class PanelBuffer extends javax.swing.JPanel {
             fila.add(casillas[i]);
         }
         actualizar();
+        //se refresca solo cada 300 ms
+        reloj = new Timer(300, new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                actualizar();
+            }
+        });
+        reloj.start();
     }
 
     //vuelve a leer el buffer y pinta todo de nuevo, hay que llamarlo cada ciclo
     public void actualizar() {
-        titulo.setText(buffer.getNombre() + "   (" + buffer.getCantidad() + " / " + buffer.getCapacidad() + ")");
-        //si la casilla tiene algo se pone naranja con el numero, si no queda blanca
+        titulo.setText(armarTitulo());
+        semaforos.setText("vacio " + buffer.getVacio().getValor()
+                + "  ·  lleno " + buffer.getLleno().getValor()
+                + "  ·  mutex " + buffer.getMutex().getValor());
+        //cada casilla lleva su posicion arriba y lo que tiene adentro abajo
         for (int i = 0; i < casillas.length; i++) {
             if (buffer.estaOcupada(i)) {
-                casillas[i].setText(String.valueOf(buffer.getElemento(i)));
-                casillas[i].setBackground(new Color(255, 214, 153));
+                casillas[i].setText(armarCasilla(i, String.valueOf(buffer.getElemento(i))));
+                casillas[i].setBackground(OCUPADA);
             } else {
-                casillas[i].setText("");
+                casillas[i].setText(armarCasilla(i, "—"));
                 casillas[i].setBackground(Color.WHITE);
             }
         }
-        int vacio = buffer.getVacio().getValor();
-        int lleno = buffer.getLleno().getValor();
-        int mutex = buffer.getMutex().getValor();
-        semaforos.setText("vacio = " + vacio + "     lleno = " + lleno + "     mutex = " + mutex);
-        esperando.setText("Esperando:  " + esperan(vacio) + " en vacio,  " + esperan(lleno) + " en lleno,  " + esperan(mutex) + " en mutex");
+        bloqueados.setText(armarBloqueados());
     }
 
-    //si el semaforo es negativo, ese numero sin el menos es cuantos procesos esperan
-    private int esperan(int valor) {
-        if (valor < 0) {
-            return -valor;
+    //dice en que computador esta el buffer, si es que tiene uno
+    private String armarTitulo() {
+        String lleno = buffer.getCantidad() + "/" + buffer.getCapacidad();
+        if (buffer.getComputador() == null) {
+            return buffer.getNombre() + "  ·  " + lleno;
         }
-        return 0;
+        return buffer.getNombre() + "  ·  en RAM de " + buffer.getComputador().getNombre() + "  ·  " + lleno;
     }
+
+    //la posicion arriba y el valor abajo
+    private String armarCasilla(int posicion, String valor) {
+        return "<html><center>0x" + posicion + "<br>" + valor + "</center></html>";
+    }
+
+    //junta los bloqueados de los tres semaforos en una sola linea
+    private String armarBloqueados() {
+        String texto = "";
+        texto = pegar(texto, conSemaforo(buffer.getVacio().esperar(), "vacio"));
+        texto = pegar(texto, conSemaforo(buffer.getLleno().esperar(), "lleno"));
+        texto = pegar(texto, conSemaforo(buffer.getMutex().esperar(), "mutex"));
+        if (texto.equals("")) {
+            return "Bloqueados: ninguno";
+        }
+        return "Bloqueados: " + texto;
+    }
+
+    //le pone el nombre del semaforo detras de cada proceso que lo espera
+    private String conSemaforo(String procesos, String semaforo) {
+        if (procesos.equals("nadie")) {
+            return "";
+        }
+        String texto = "";
+        String[] nombres = procesos.split(", ");
+        for (int i = 0; i < nombres.length; i++) {
+            texto = pegar(texto, nombres[i] + " · " + semaforo);
+        }
+        return texto;
+    }
+
+    //junta dos pedazos con coma, saltando los que estan vacios
+    private String pegar(String a, String b) {
+        if (b.equals("")) {
+            return a;
+        }
+        if (a.equals("")) {
+            return b;
+        }
+        return a + ", " + b;
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -75,64 +132,60 @@ public class PanelBuffer extends javax.swing.JPanel {
     private void initComponents() {
 
         titulo = new javax.swing.JLabel();
-        fila = new javax.swing.JPanel();
         semaforos = new javax.swing.JLabel();
-        esperando = new javax.swing.JLabel();
+        fila = new javax.swing.JPanel();
+        bloqueados = new javax.swing.JLabel();
 
         titulo.setText("B1");
+
+        semaforos.setText("vacio 0 · lleno 0 · mutex 1");
 
         javax.swing.GroupLayout filaLayout = new javax.swing.GroupLayout(fila);
         fila.setLayout(filaLayout);
         filaLayout.setHorizontalGroup(
             filaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 370, Short.MAX_VALUE)
+            .addGap(0, 0, Short.MAX_VALUE)
         );
         filaLayout.setVerticalGroup(
             filaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 202, Short.MAX_VALUE)
+            .addGap(0, 0, Short.MAX_VALUE)
         );
 
-        semaforos.setText("vacio = 1");
-
-        esperando.setText("Esperando:");
+        bloqueados.setText("Bloqueados: ninguno");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(48, 48, 48)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(semaforos)
-                            .addComponent(esperando)))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(23, 23, 23)
-                        .addComponent(fila, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(32, 32, 32)
-                        .addComponent(titulo)))
-                .addContainerGap(325, Short.MAX_VALUE))
+                        .addComponent(titulo)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
+                        .addComponent(semaforos))
+                    .addComponent(fila, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(bloqueados))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(49, 49, 49)
-                .addComponent(titulo)
-                .addGap(18, 18, 18)
-                .addComponent(fila, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
-                .addComponent(semaforos)
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(titulo)
+                    .addComponent(semaforos))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(esperando)
-                .addGap(39, 39, 39))
+                .addComponent(fila, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(bloqueados)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel esperando;
+    private javax.swing.JLabel bloqueados;
     private javax.swing.JPanel fila;
     private javax.swing.JLabel semaforos;
     private javax.swing.JLabel titulo;
