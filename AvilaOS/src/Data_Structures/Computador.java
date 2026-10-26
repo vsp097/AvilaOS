@@ -24,20 +24,6 @@ public class Computador implements ClockListener{
     protected Cola<PCB> Bloqueados = new Cola<>();
     protected Cola<PCB> Terminados = new Cola<>();
     protected PCB enEjecucion;
-
-    public PCB getEnEjecucion() {
-        return enEjecucion;
-    }
-    
-    protected Planificador planificador = new FCFS();
-
-    public void setPlanificador(Planificador p) {
-        planificador = p;
-    }
-
-    public Planificador getPlanificador() {
-        return planificador;
-    }
     protected ModoCPU modo = ModoCPU.Usuario;
     protected String nombre = "Computador";
     protected LogEventos log;
@@ -53,12 +39,45 @@ public class Computador implements ClockListener{
         retrasoRed = r;
     }
     
+    
     public Computador(){
         CPU = null;
         RAM = 0;
         CPUt = null;
         RAMt = 0;   
         datatype = null;
+    }
+    
+    public PCB getEnEjecucion() {
+        return enEjecucion;
+    }
+    
+        public synchronized void admitir() {
+        Cola<PCB> siguen = new Cola<>();
+        PCB p = Nuevos.Desencolar();
+        while (p != null) {
+            if (p.getmem() <= RAM) {
+                useRam(p.getmem());
+                p.setstate(EstadoProceso.Listo);
+                Listos.Encolar(p);
+                registrar("Proceso " + p.getname() + " es admitido y pasa a listos");
+            } else {
+                siguen.Encolar(p);
+            }
+            p = Nuevos.Desencolar();
+        }
+        moverTodos(siguen, Nuevos);
+    }
+
+    
+    protected Planificador planificador = new FCFS();
+
+    public void setPlanificador(Planificador p) {
+        planificador = p;
+    }
+
+    public Planificador getPlanificador() {
+        return planificador;
     }
     
     public boolean isnull(){
@@ -160,10 +179,9 @@ public class Computador implements ClockListener{
     @Override
     public void onTick(long cycle) {
         ciclo = cycle;
-        //Diego aqui va lo de adminitr q que por eso sale error
+        admitir();
         revisarBloqueados();
         revisarDeadlines();
-        //Andrea 
         if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
             expropiese();
         }
