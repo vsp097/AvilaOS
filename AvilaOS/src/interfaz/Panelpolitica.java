@@ -4,6 +4,7 @@
  */
 package interfaz;
 
+import Data_Structures.Computador;
 import avilaos.FCFS;
 import avilaos.Planificador;
 import avilaos.PoliticaPlanificacion;
@@ -18,8 +19,16 @@ public class Panelpolitica extends javax.swing.JPanel {
     /**
      * Creates new form Panelpolitica
      */
+        //el computador al que se le cambia la politica
+    private Computador computador;
+
     public Panelpolitica() {
         initComponents();
+    }
+
+        //para saber a que computador aplicarle la politica
+    public void setComputador(Computador c) {
+        computador = c;
     }
 
     /**
@@ -50,6 +59,7 @@ public class Panelpolitica extends javax.swing.JPanel {
 
         jLabel2.setText("Quantum:");
 
+        quantum.setColumns(5);
         quantum.setText("3");
         quantum.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -71,38 +81,34 @@ public class Panelpolitica extends javax.swing.JPanel {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(68, 68, 68)
+                .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(mensaje)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(aplicar)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel1)
-                            .addComponent(Combo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(quantum, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(168, 457, Short.MAX_VALUE))))
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(Combo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(quantum, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(aplicar))
+                    .addComponent(mensaje))
+                .addContainerGap(60, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(67, 67, 67)
-                .addComponent(jLabel1)
-                .addGap(26, 26, 26)
-                .addComponent(Combo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(33, 33, 33)
-                .addComponent(jLabel2)
-                .addGap(18, 18, 18)
-                .addComponent(quantum, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(31, 31, 31)
-                .addComponent(aplicar)
-                .addGap(31, 31, 31)
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(Combo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2)
+                    .addComponent(quantum, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(aplicar))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(mensaje)
-                .addContainerGap(52, Short.MAX_VALUE))
+                .addContainerGap(16, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -127,25 +133,49 @@ public class Panelpolitica extends javax.swing.JPanel {
     }//GEN-LAST:event_quantumActionPerformed
 
     private void aplicarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aplicarActionPerformed
-       try {
-            int q = Integer.parseInt(quantum.getText().trim());
-            PoliticaPlanificacion politica = PoliticaPlanificacion.valueOf(Combo.getSelectedItem().toString());
-            planificador = SelectorPolitica.crear(politica, q);
-            mensaje.setText("Usando " + politica);
-        } catch (NumberFormatException e) {
-            mensaje.setText("El quantum debe ser un numero");
-        } catch (IllegalArgumentException e) {
-            mensaje.setText(e.getMessage());
+        PoliticaPlanificacion politica = PoliticaPlanificacion.valueOf(Combo.getSelectedItem().toString());
+        //el quantum solo lo usa round robin, las otras politicas no lo piden
+        int q = 1;
+        if (politica == PoliticaPlanificacion.ROUND_ROBIN) {
+            q = leerQuantum();
+            if (q == 0) {
+                mensaje.setText("El quantum debe ser un numero entre 1 y 100");
+                return;
+            }
         }
+        planificador = SelectorPolitica.crear(politica, q);
+        if (computador == null) {
+            mensaje.setText("Usando " + politica);
+            return;
+        }
+        computador.setPlanificador(planificador);
+        mensaje.setText(computador.getNombre() + " usa " + politica);
     }//GEN-LAST:event_aplicarActionPerformed
+
+    //devuelve el quantum si es un numero entre 1 y 100, si no devuelve 0
+    private int leerQuantum() {
+        String texto = quantum.getText().trim();
+        if (texto.equals("") || texto.length() > 3) {
+            return 0;
+        }
+        for (int i = 0; i < texto.length(); i++) {
+            if (!Character.isDigit(texto.charAt(i))) {
+                return 0;
+            }
+        }
+        int q = Integer.parseInt(texto);
+        if (q < 1 || q > 100) {
+            return 0;
+        }
+        return q;
+    }
 
     //la politica que se esta usando
     private Planificador planificador = new FCFS();
 
     public Planificador getPlanificador() {
         return planificador;
-        
-    }//GEN-LAST:event_aplicarActionPerformed
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox<String> Combo;

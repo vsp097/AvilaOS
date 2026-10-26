@@ -5,6 +5,9 @@
 package interfaz;
 
 import avilaos.LogEventos;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.Timer;
 
 /**
  *
@@ -16,17 +19,28 @@ public class Panellog extends javax.swing.JPanel {
      * Creates new form Panellog
      */
         private LogEventos log;
+    //para refrescar el panel solo
+    private Timer reloj;
 
     //recibe el log que va a mostrar
     public Panellog(LogEventos log) {
         initComponents();
         this.log = log;
         actualizar();
+        //se refresca solo cada 300 ms
+        reloj = new Timer(300, new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                actualizar();
+            }
+        });
+        reloj.start();
     }
 
     //vuelve a poner todo el texto del log
     public void actualizar() {
         area.setText(log.getTexto());
+        //el scroll baja solo hasta la ultima linea
+        area.setCaretPosition(area.getDocument().getLength());
     }
 
     /**

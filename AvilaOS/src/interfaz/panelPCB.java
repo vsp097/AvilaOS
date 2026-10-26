@@ -4,7 +4,12 @@
  */
 package interfaz;
 
+import Data_Structures.Computador;
+import Data_Structures.EstadoProceso;
 import Data_Structures.PCB;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.Timer;
 
 /**
  *
@@ -15,26 +20,65 @@ public class panelPCB extends javax.swing.JPanel {
     /**
      * Creates new form panelPCB
      */
+        //el computador del que se saca el proceso que esta en la CPU
+    private Computador computador;
+    //para refrescar el panel solo
+    private Timer reloj;
+
     public panelPCB() {
         initComponents();
+        mostrar(null);
     }
     
         //para los datos del proceso
     public void mostrar(PCB p) {
         if (p == null) {
-            datos.setText("Ningun proceso seleccionado");
+            lblId.setText("Ningun proceso seleccionado");
+            lblNombre.setText("");
+            lblEstado.setText("");
+            lblTipo.setText("");
+            lblPC.setText("");
+            lblPrioridad.setText("");
+            lblMemoria.setText("");
+            lblDeadline.setText("");
+            lblTiempo.setText("");
+            lblMotivo.setText("");
             return;
         }
-        datos.setText("<html>"
-                + "ID: " + p.getId() + "<br>"
-                + "Nombre: " + p.getname() + "<br>"
-                + "Estado: " + p.getstate() + "<br>"
-                + "Tipo: " + p.gettype() + "<br>"
-                + "PC: " + p.getpc() + "<br>"
-                + "Memoria: " + p.getmem() + " MB<br>"
-                + "Deadline: " + p.getdeadline() + "<br>"
-                + "Tiempo restante: " + p.getime()
-                + "</html>");
+        lblId.setText("ID: " + p.getId());
+        lblNombre.setText("Nombre: " + p.getname());
+        lblEstado.setText("Estado: " + p.getstate());
+        lblTipo.setText("Tipo: " + p.gettype());
+        lblPC.setText("PC: " + p.getpc());
+        lblPrioridad.setText("Prioridad: " + p.getPrioridad());
+        lblMemoria.setText("Memoria: " + p.getmem() + " MB");
+        lblDeadline.setText("Deadline: " + p.getdeadline());
+        lblTiempo.setText("Tiempo restante: " + p.getime());
+        //el motivo solo se muestra si el proceso esta bloqueado
+        if (p.getstate() == EstadoProceso.Bloqueado) {
+            lblMotivo.setText("Motivo: " + p.getMotivo());
+        } else {
+            lblMotivo.setText("");
+        }
+    }
+
+        //si se le pasa un computador el panel se refresca solo con el proceso de la CPU
+    public void setComputador(Computador c) {
+        computador = c;
+        if (reloj != null) {
+            reloj.stop();
+            reloj = null;
+        }
+        if (computador == null) {
+            mostrar(null);
+            return;
+        }
+        reloj = new Timer(300, new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                mostrar(computador.getEnEjecucion());
+            }
+        });
+        reloj.start();
     }
 
     /**
@@ -47,44 +91,74 @@ public class panelPCB extends javax.swing.JPanel {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        datos = new javax.swing.JLabel();
+        lblId = new javax.swing.JLabel();
+        lblNombre = new javax.swing.JLabel();
+        lblEstado = new javax.swing.JLabel();
+        lblTipo = new javax.swing.JLabel();
+        lblPC = new javax.swing.JLabel();
+        lblPrioridad = new javax.swing.JLabel();
+        lblMemoria = new javax.swing.JLabel();
+        lblDeadline = new javax.swing.JLabel();
+        lblTiempo = new javax.swing.JLabel();
+        lblMotivo = new javax.swing.JLabel();
 
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("PCB"));
+        jPanel1.setLayout(new java.awt.GridLayout(10, 1));
 
-        datos.setText("Ningun proceso seleccionado");
+        lblId.setText("ID:");
+        jPanel1.add(lblId);
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(160, 160, 160)
-                .addComponent(datos)
-                .addContainerGap(353, Short.MAX_VALUE))
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(67, 67, 67)
-                .addComponent(datos)
-                .addContainerGap(290, Short.MAX_VALUE))
-        );
+        lblNombre.setText("Nombre:");
+        jPanel1.add(lblNombre);
+
+        lblEstado.setText("Estado:");
+        jPanel1.add(lblEstado);
+
+        lblTipo.setText("Tipo:");
+        jPanel1.add(lblTipo);
+
+        lblPC.setText("PC:");
+        jPanel1.add(lblPC);
+
+        lblPrioridad.setText("Prioridad:");
+        jPanel1.add(lblPrioridad);
+
+        lblMemoria.setText("Memoria:");
+        jPanel1.add(lblMemoria);
+
+        lblDeadline.setText("Deadline:");
+        jPanel1.add(lblDeadline);
+
+        lblTiempo.setText("Tiempo restante:");
+        jPanel1.add(lblTiempo);
+
+        lblMotivo.setText("Motivo:");
+        jPanel1.add(lblMotivo);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 395, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel datos;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JLabel lblDeadline;
+    private javax.swing.JLabel lblEstado;
+    private javax.swing.JLabel lblId;
+    private javax.swing.JLabel lblMemoria;
+    private javax.swing.JLabel lblMotivo;
+    private javax.swing.JLabel lblNombre;
+    private javax.swing.JLabel lblPC;
+    private javax.swing.JLabel lblPrioridad;
+    private javax.swing.JLabel lblTiempo;
+    private javax.swing.JLabel lblTipo;
     // End of variables declaration//GEN-END:variables
 }

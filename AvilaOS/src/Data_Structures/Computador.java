@@ -24,20 +24,6 @@ public class Computador implements ClockListener{
     protected Cola<PCB> Bloqueados = new Cola<>();
     protected Cola<PCB> Terminados = new Cola<>();
     protected PCB enEjecucion;
-
-    public PCB getEnEjecucion() {
-        return enEjecucion;
-    }
-    
-    protected Planificador planificador = new FCFS();
-
-    public void setPlanificador(Planificador p) {
-        planificador = p;
-    }
-
-    public Planificador getPlanificador() {
-        return planificador;
-    }
     protected ModoCPU modo = ModoCPU.Usuario;
     protected String nombre = "Computador";
     protected LogEventos log;
@@ -53,12 +39,45 @@ public class Computador implements ClockListener{
         retrasoRed = r;
     }
     
+    
     public Computador(){
         CPU = null;
         RAM = 0;
         CPUt = null;
         RAMt = 0;   
         datatype = null;
+    }
+    
+    public PCB getEnEjecucion() {
+        return enEjecucion;
+    }
+    
+        public synchronized void admitir() {
+        Cola<PCB> siguen = new Cola<>();
+        PCB p = Nuevos.Desencolar();
+        while (p != null) {
+            if (p.getmem() <= RAM) {
+                useRam(p.getmem());
+                p.setstate(EstadoProceso.Listo);
+                Listos.Encolar(p);
+                registrar("Proceso " + p.getname() + " es admitido y pasa a listos");
+            } else {
+                siguen.Encolar(p);
+            }
+            p = Nuevos.Desencolar();
+        }
+        moverTodos(siguen, Nuevos);
+    }
+
+    
+    protected Planificador planificador = new FCFS();
+
+    public void setPlanificador(Planificador p) {
+        planificador = p;
+    }
+
+    public Planificador getPlanificador() {
+        return planificador;
     }
     
     public boolean isnull(){
@@ -160,10 +179,9 @@ public class Computador implements ClockListener{
     @Override
     public void onTick(long cycle) {
         ciclo = cycle;
-        //Diego aqui va lo de adminitr q que por eso sale error
+        admitir();
         revisarBloqueados();
         revisarDeadlines();
-        //Andrea 
         if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
             expropiese();
         }
@@ -239,6 +257,7 @@ public class Computador implements ClockListener{
         }
         if (tipo.equals("I/O Bound") && p.getpc() % cadaES == 0) {
             p.setEspera(duracionES);
+            p.setMotivo("E/S");
             p.setstate(EstadoProceso.Bloqueado);
             Bloqueados.Encolar(p);
             registrar("Proceso " + p.getname() + " pide E/S y se bloquea");
@@ -279,6 +298,7 @@ public class Computador implements ClockListener{
                 //si el buffer esta en otro computador espera la red
         if (paso == 2 && b.estaLejos(this) && retrasoRed > 0) {
             p.setEspera(retrasoRed);
+            p.setMotivo("red (buffer " + b.getNombre() + ")");
             p.setstate(EstadoProceso.Bloqueado);
             Bloqueados.Encolar(p);
             registrar("Proceso " + p.getname() + " accede al buffer " + b.getNombre() + " de forma remota");
@@ -288,7 +308,14 @@ public class Computador implements ClockListener{
         if (seBloqueo) {
             p.setstate(EstadoProceso.Bloqueado);
             Bloqueados.Encolar(p);
-            registrar("Proceso " + p.getname() + " se bloquea en el buffer " + b.getNombre());
+            String sem = "mutex";
+            if (paso == 0 && p.gettype().equals("Productor")) {
+                sem = "vacio";
+            } else if (paso == 0) {
+                sem = "lleno";
+            }
+            p.setMotivo("semaforo " + sem + " (buffer " + b.getNombre() + ")");
+            registrar("Proceso " + p.getname() + " se bloquea en el semaforo '" + sem + "' del buffer " + b.getNombre());
             enEjecucion = null;
         }
     }

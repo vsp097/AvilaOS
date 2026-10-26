@@ -69,7 +69,35 @@ public class Semaforo {
         }
     }
     
-
+    //nombres de los procesos que estan esperando en este semaforo
+    public String esperar() {
+        llave.acquireUninterruptibly();
+        try {
+            String texto = "";
+            Cola<PCB> aux = new Cola<>();
+            PCB p = bloqueados.Desencolar();
+            while (p != null) {
+                if (!texto.equals("")) {
+                    texto = texto + ", ";
+                }
+                texto = texto + p.getname();
+                aux.Encolar(p);
+                p = bloqueados.Desencolar();
+            }
+            //los devuelvo a la cola en el mismo orden
+            p = aux.Desencolar();
+            while (p != null) {
+                bloqueados.Encolar(p);
+                p = aux.Desencolar();
+            }
+            if (texto.equals("")) {
+                return "nadie";
+            }
+            return texto;
+        } finally {
+            llave.release();
+        }
+    }
     //para devolver el nombre
     public String getNombre() {
         return nombre;

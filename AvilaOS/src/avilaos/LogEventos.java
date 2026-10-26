@@ -19,7 +19,7 @@ public class LogEventos {
     
     // para registrar las decisiones importantes del sistema
     public void registrar(int ciclo, String mensaje) {
-       String linea = "[Ciclo " + ciclo + "] " + mensaje;
+       String linea = String.format("[%04d] ", ciclo) + mensaje;
        llave.acquireUninterruptibly();
         try {
             texto = texto + linea + "\n";
