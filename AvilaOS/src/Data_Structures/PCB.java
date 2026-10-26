@@ -17,7 +17,6 @@ public class PCB {
     protected float mem;
     protected int deadline;
     protected float time;
-        //el numero menor es mas importante
     protected int prioridad;
     
     public PCB(int id, String n, int p, String t, float m){
