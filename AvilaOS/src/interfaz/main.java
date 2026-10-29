@@ -4,12 +4,21 @@
  */
 package interfaz;
 
+import Data_Structures.Cola;
 import Data_Structures.Computador;
 import Data_Structures.Listas;
 import Data_Structures.Nodo;
+import Data_Structures.PCB;
+import avilaos.Buffer;
 import avilaos.GlobalClock;
+import avilaos.LogEventos;
 import avilaos.PoliticaPlanificacion;
 import avilaos.SelectorPolitica;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 /**
  *
@@ -21,53 +30,85 @@ public class main extends javax.swing.JFrame {
     private Computador computador1;
     private Computador computador2;
     private GlobalClock gC;
+    private LogEventos log;
+    private Panellog panelLog;
+    private panelPCB pcbComputador1;
+    private panelPCB pcbComputador2;
+    private JTabbedPane pestanas;
+     private Listas<PanelBuffer> panelesBuffer = null;
     /**
      * Creates new form main
      */
     public main(Data_Structures.Computador c, Computador c2, GlobalClock g) {
-        gC =g;
-        gC.start();
+                gC = g;
         initComponents();
         computador1 = c;
-        computador2 =c2;
-        Nodo aux = new <Computador> Nodo(computador1);
-        Listas compus = new Listas(aux);
-        aux = new <Computador> Nodo(computador2);
-        compus.insertar(aux);
-        //1. la lista de computadores tiene que estar puesta antes de arrancar el reloj
+        computador2 = c2;
+        Listas<Computador> compus = new Listas<>(new Nodo<Computador>(computador1));
+        compus.insertar(new Nodo<Computador>(computador2));
+        //la lista de computadores tiene que estar puesta antes de arrancar el reloj
         gC.setClocklist(compus);
         Cpu1.setText(c.getCPU());
         RAM1.setText((Float.toString(c.getRamt())));
         CPU2.setText(c2.getCPU());
         RAM2.setText((Float.toString(c2.getRamt())));
  
-        //3. los menus de scheduler cambian la politica mientras corre la simulacion
-        jComboBox1.addActionListener(e -> cambiarPolitica(computador1, jComboBox1.getSelectedIndex()));
-        jComboBox2.addActionListener(e -> cambiarPolitica(computador2, jComboBox2.getSelectedIndex()));
+        //un solo log para los dos computadores
+        log = new LogEventos();
+        c.setLog(log);
+        c2.setLog(log);
+        armarPaneles();
+ 
+        //los menus de scheduler: jComboBox1 y jComboBox2 ya no estan en el formulario,
+        //asi que uso jComboBox3 (computador 1) y jComboBox4 (computador 2) y les pongo las politicas
+        String[] politicas = {"FCFS", "EDF", "Round Robin", "Prioridades apropiadas"};
+        jComboBox3.setModel(new DefaultComboBoxModel<>(politicas));
+        jComboBox4.setModel(new DefaultComboBoxModel<>(politicas));
+        jComboBox3.addActionListener(e -> cambiarPolitica(computador1, jComboBox3.getSelectedIndex()));
+        jComboBox4.addActionListener(e -> cambiarPolitica(computador2, jComboBox4.getSelectedIndex()));
  
         gC.setClockListener(this::alCiclo);
         //el reloj arranca al final, cuando ya tiene todo conectado
         if (!gC.isAlive()) {
             gC.start();
+
         }
 
     }
     
-        private static final PoliticaPlanificacion[] POLITICAS = {
+    private void armarPaneles() {
+        panelLog = new Panellog(log);
+        pcbComputador1 = new panelPCB();
+        pcbComputador2 = new panelPCB();
+        pestanas = new JTabbedPane();
+        pestanas.addTab("Log", new JScrollPane(panelLog));
+        pestanas.addTab("PCB Computador 1", new JScrollPane(pcbComputador1));
+        pestanas.addTab("PCB Computador 2", new JScrollPane(pcbComputador2));
+        pestanas.setPreferredSize(new Dimension(700, 240));
+        getContentPane().add(pestanas, BorderLayout.SOUTH);
+        pack();
+    }
+
+    public void agregarBuffer(Buffer b) {
+        PanelBuffer pb = new PanelBuffer(b);
+        Nodo<PanelBuffer> nodo = new Nodo<>(pb);
+        if (panelesBuffer == null) {
+            panelesBuffer = new Listas<>(nodo);
+        } else {
+            panelesBuffer.insertar(nodo);
+        }
+        pestanas.addTab(b.getNombre(), new JScrollPane(pb));
+    }
+
+    private static final PoliticaPlanificacion[] POLITICAS = {
         PoliticaPlanificacion.FCFS,
         PoliticaPlanificacion.EDF,
         PoliticaPlanificacion.ROUND_ROBIN,
         PoliticaPlanificacion.PRIORIDADES
     };
     private static final int QUANTUM_POR_DEFECTO = 4;
- 
     //crea el planificador escogido y se lo pasa al computador
-    private void cambiarPolitica(Computador comp, int indice) {
-        if (comp == null || indice < 0 || indice >= POLITICAS.length) {
-            return;
-        }
-        comp.setPlanificador(SelectorPolitica.crear(POLITICAS[indice], QUANTUM_POR_DEFECTO));
-    }
+
  
     //esto lo llama el reloj en su propio hilo, justo despues de que los computadores hicieron su tick
     //por eso aqui es seguro recorrer las colas, y a la ventana solo le paso los modelos ya armados
@@ -77,7 +118,7 @@ public class main extends javax.swing.JFrame {
         final Listas <String> bloqueados;
         final Listas <String> terminados;
         //mismo candado que usan admitir() y agregarProceso(), para que la ventana no encole a mitad de la copia
-        synchronized (computador1) {
+                synchronized (computador1) {
             nuevos = aListas(computador1.getNuevos());
             listos = aListas(computador1.getListos());
             bloqueados = aListas(computador1.getBloqueados());
@@ -90,15 +131,29 @@ public class main extends javax.swing.JFrame {
             mostrar(jList2, listos);
             mostrar(jList3, bloqueados);
             mostrar(jList4, terminados);
-            panelBuffer.actualizar();
+            //5. paneles: se actualizan en cada ciclo
             panelLog.actualizar();
-            panelPCB.mostrar();
-
+            pcbComputador1.mostrar(computador1.getEnEjecucion());
+            pcbComputador2.mostrar(computador2.getEnEjecucion());
+            if (panelesBuffer != null) {
+                for (int i = 0; i < panelesBuffer.len(); i++) {
+                    panelesBuffer.retornar(i).actualizar();
+                }
+            }
+ 
         });
+
     }
+    private void cambiarPolitica(Computador comp, int indice) {
+        if (comp == null || indice < 0 || indice >= POLITICAS.length) {
+            return;
+        }
+        comp.setPlanificador(SelectorPolitica.crear(POLITICAS[indice], QUANTUM_POR_DEFECTO));
+    }
+
  
     //copia el contenido de una cola a un modelo de lista sin cambiarle el orden a la cola
-    static Listas aListas(Cola<PCB> cola) {
+    static Listas aListas(Cola <PCB> cola) {
         Listas<String> lista = null;
         Cola<PCB> temporal = new Cola<>();
         PCB p = cola.Desencolar();
@@ -118,6 +173,7 @@ public class main extends javax.swing.JFrame {
             p = temporal.Desencolar();
         }
         return lista;
+
     }
 
     
@@ -127,6 +183,7 @@ public class main extends javax.swing.JFrame {
             textos[i] = lista.retornar(i);
         }
         jl.setListData(textos);
+
     }
 
 

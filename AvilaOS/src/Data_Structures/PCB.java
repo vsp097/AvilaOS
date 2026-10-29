@@ -9,6 +9,21 @@ package Data_Structures;
  * @author diego
  */
 public class PCB {
+    
+        //datos para ejecutar el proceso
+    protected int paso = 0;
+    protected avilaos.Buffer buffer;
+    protected int elementos;
+    protected int cadaCuantos = 1;
+    protected int contador = 0;
+    protected int espera = 0;
+    //datos para las metricas
+    protected long llegada = 0;
+    protected boolean tuvoDeadline = false;
+    protected boolean yaEjecuto = false;
+    protected int ciclosCPU = 0;
+    protected int indiceBuffer = -1;
+    protected long cicloBloqueo = 0;
     private int ID;
     protected String name;
     protected int pc;
@@ -17,7 +32,6 @@ public class PCB {
     protected float mem;
     protected int deadline;
     protected float time;
-        //el numero menor es mas importante
     protected int prioridad;
     
     public PCB(int id, String n, int p, String t, float m){
@@ -81,14 +95,6 @@ public class PCB {
         prioridad = p;
     }
     
-        //datos para ejecutar el proceso
-    protected int paso = 0;
-    protected avilaos.Buffer buffer;
-    protected int elementos;
-    protected int cadaCuantos = 1;
-    protected int contador = 0;
-    protected int espera = 0;
-
     public void avanzarPC() {
         pc++;
     }
@@ -141,14 +147,6 @@ public class PCB {
         espera = e;
     }
     
-    //datos para las metricas
-    protected long llegada = 0;
-    protected boolean tuvoDeadline = false;
-    protected boolean yaEjecuto = false;
-    protected int ciclosCPU = 0;
-    protected int indiceBuffer = -1;
-    protected long cicloBloqueo = 0;
-
     public long getLlegada() {
         return llegada;
     }
