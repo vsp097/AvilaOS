@@ -12,9 +12,9 @@ import Data_Structures.Listas;
  * @author diego
  */
 public class GlobalClock extends Thread{
-    private long cycleDuration = 1000; 
-    private long cycle = 0;
-    private boolean running = true;
+    private volatile long cycleDuration = 1000;
+    private volatile long cycle = 0;
+    private volatile boolean running = true;
     private volatile boolean paused = false;
     private final Object pauseLock = new Object();
     
@@ -81,6 +81,11 @@ public class GlobalClock extends Thread{
     public void detener() {
         running = false;
         reanudar();               
+    }
+
+    //ciclo actual, para el log de la ventana
+    public long getCiclo() {
+        return cycle;
     }
 
     public boolean isPaused() {
