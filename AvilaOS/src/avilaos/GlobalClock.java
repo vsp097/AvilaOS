@@ -6,6 +6,8 @@ package avilaos;
 
 import Data_Structures.Computador;
 import Data_Structures.Listas;
+import Data_Structures.Nodo;
+import java.util.concurrent.Semaphore;
 
 /**
  *
@@ -19,6 +21,8 @@ public class GlobalClock extends Thread{
     private final Object pauseLock = new Object();
     
     private Listas Clocklist;
+    //semaforo de java para que la ventana no agregue un computador mientras el reloj recorre la lista
+    private final Semaphore llaveLista = new Semaphore(1);
     private volatile ClockListener listener;
     //vycky aqui crea el semaforo
     
@@ -46,11 +50,16 @@ public class GlobalClock extends Thread{
 
             cycle++;
 
-            if (Clocklist != null) {
-                for (int i = 0; i < Clocklist.len(); i++) {
-                    Computador c = (Computador) Clocklist.retornar(i);
-                    c.onTick(cycle);
+            llaveLista.acquireUninterruptibly();
+            try {
+                if (Clocklist != null) {
+                    for (int i = 0; i < Clocklist.len(); i++) {
+                        Computador c = (Computador) Clocklist.retornar(i);
+                        c.onTick(cycle);
+                    }
                 }
+            } finally {
+                llaveLista.release();
             }
 
             // Avisar a la interfaz
@@ -67,6 +76,16 @@ public class GlobalClock extends Thread{
         }
     }
     
+    //agrega un computador mas al reloj, por ejemplo cuando la configuracion pide 3 o mas
+    public void agregarComputador(Computador c) {
+        llaveLista.acquireUninterruptibly();
+        try {
+            Clocklist.insertar(new Nodo<Computador>(c));
+        } finally {
+            llaveLista.release();
+        }
+    }
+
     public void pausar() {
         paused = true;
     }

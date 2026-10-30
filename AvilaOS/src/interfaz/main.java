@@ -30,6 +30,9 @@ public class main extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(main.class.getName());
     private Computador computador1;
     private Computador computador2;
+    //todos los computadores del reloj; el 1 y el 2 se ven aqui y del 3 en adelante en su propia ventana
+    private Listas<Computador> computadores;
+    private Listas<VentanaComputador> ventanasExtra = null;
     private GlobalClock gC;
     private LogEventos log;
     private Panellog panelLog;
@@ -55,6 +58,9 @@ public class main extends javax.swing.JFrame {
     //unas solas metricas para los dos computadores y para el panel
     private Metricas metricas = new Metricas();
     private PanelMetricas panelMetricas;
+    //con cuantos buffers y computadores se armo el panel de metricas
+    private int buffersEnMetricas = -1;
+    private int computadoresEnMetricas = -1;
     //las ventanas del log y de las metricas
     private VentanaLog ventanaLog;
     private VentanaMetricas ventanaMetricas;
@@ -67,10 +73,10 @@ public class main extends javax.swing.JFrame {
         initComponents();
         computador1 = c;
         computador2 = c2;
-        Listas<Computador> compus = new Listas<>(new Nodo<Computador>(computador1));
-        compus.insertar(new Nodo<Computador>(computador2));
+        computadores = new Listas<>(new Nodo<Computador>(computador1));
+        computadores.insertar(new Nodo<Computador>(computador2));
         //la lista de computadores tiene que estar puesta antes de arrancar el reloj
-        gC.setClocklist(compus);
+        gC.setClocklist(computadores);
         Cpu1.setText("CPU: " + c.getCPU());
         CPU2.setText("CPU: " + c2.getCPU());
 
@@ -124,7 +130,6 @@ public class main extends javax.swing.JFrame {
         Panelpolitica pol2 = new Panelpolitica();
         pol2.setComputador(computador2);
         pol2Host.add(pol2, BorderLayout.CENTER);
-        panelMetricas = new PanelMetricas(metricas, 2, 0);
     }
 
     public void agregarBuffer(Buffer b) {
@@ -197,8 +202,18 @@ public class main extends javax.swing.JFrame {
     }
 
     //abre las metricas en su propia ventana
+    //se arma de nuevo si hay buffers o computadores nuevos, para que salgan en la tabla
     private void abrirMetricas() {
+        int cantBuffers = buffers == null ? 0 : buffers.len();
+        if (ventanaMetricas != null && (cantBuffers != buffersEnMetricas || computadores.len() != computadoresEnMetricas)) {
+            panelMetricas.detener();
+            ventanaMetricas.dispose();
+            ventanaMetricas = null;
+        }
         if (ventanaMetricas == null) {
+            buffersEnMetricas = cantBuffers;
+            computadoresEnMetricas = computadores.len();
+            panelMetricas = new PanelMetricas(metricas, computadoresEnMetricas, buffersEnMetricas);
             ventanaMetricas = new VentanaMetricas(panelMetricas);
             ventanaMetricas.setLocationRelativeTo(this);
         }
@@ -209,11 +224,16 @@ public class main extends javax.swing.JFrame {
     private void aplicarConfiguracion(Configuracion config) {
         gC.setcduration(config.duracionCicloMs);
         txtDuracion.setText(String.valueOf(config.duracionCicloMs));
-        computador1.setRetrasoRed(config.latenciaRed);
-        computador2.setRetrasoRed(config.latenciaRed);
         //validar() garantiza que hay por lo menos dos computadores
-        aplicarAComputador(computador1, config.computadores[0]);
-        aplicarAComputador(computador2, config.computadores[1]);
+        //si la configuracion pide mas, se crean con la misma clase y se agregan al reloj
+        for (int i = computadores.len(); i < config.computadores.length; i++) {
+            agregarComputadorExtra(i + 1);
+        }
+        for (int i = 0; i < config.computadores.length; i++) {
+            Computador c = computadores.retornar(i);
+            c.setRetrasoRed(config.latenciaRed);
+            aplicarAComputador(c, config.computadores[i]);
+        }
         //primero los buffers, porque los productores y consumidores los necesitan
         crearBuffers(config);
         crearProcesos(config);
@@ -222,12 +242,49 @@ public class main extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(this, "Configuracion aplicada");
     }
 
+    //crea el computador numero n, le pone el log y las metricas y le abre su ventana
+    private void agregarComputadorExtra(int n) {
+        Computador c = new Computador();
+        c.setCPUt("CPU " + n);
+        c.setNombre("Computador " + n);
+        c.setLog(log);
+        c.setMetricas(metricas, n - 1);
+        gC.agregarComputador(c);
+        VentanaComputador v = new VentanaComputador(c);
+        v.setVisible(true);
+        Nodo<VentanaComputador> nodo = new Nodo<>(v);
+        if (ventanasExtra == null) {
+            ventanasExtra = new Listas<>(nodo);
+        } else {
+            ventanasExtra.insertar(nodo);
+        }
+        //los formularios se vuelven a armar para que ofrezcan el computador nuevo
+        if (ventanaProceso != null) {
+            ventanaProceso.dispose();
+            ventanaProceso = null;
+            formulario = null;
+        }
+        if (ventanaBuffers != null) {
+            ventanaBuffers.dispose();
+            ventanaBuffers = null;
+        }
+        log.registrar((int) gC.getCiclo(), "Se agrega el " + c.getNombre() + " al cluster");
+    }
+
+    //el computador por su numero (1, 2, 3...), o null si no existe
+    private Computador buscarComputador(int numero) {
+        if (numero < 1 || numero > computadores.len()) {
+            return null;
+        }
+        return computadores.retornar(numero - 1);
+    }
+
     //crea los buffers del archivo, en el mismo orden para que los procesos los encuentren
     private void crearBuffers(Configuracion config) {
         for (int i = 0; i < config.buffers.length; i++) {
             Configuracion.ConfigBuffer datos = config.buffers[i];
             Buffer b = new Buffer("B" + (i + 1), datos.capacidad);
-            Computador anfitrion = datos.computadorAnfitrion == 2 ? computador2 : computador1;
+            Computador anfitrion = buscarComputador(datos.computadorAnfitrion);
             if (!b.setComputador(anfitrion)) {
                 JOptionPane.showMessageDialog(this, "El buffer B" + (i + 1)
                         + " no cabe en la RAM del Computador " + datos.computadorAnfitrion,
@@ -261,7 +318,10 @@ public class main extends javax.swing.JFrame {
     //abre el panel de crear buffers en su propia ventana, una sola vez
     private void abrirVistaBuffers() {
         if (ventanaBuffers == null) {
-            Computador[] compus = {computador1, computador2};
+            Computador[] compus = new Computador[computadores.len()];
+            for (int i = 0; i < compus.length; i++) {
+                compus[i] = computadores.retornar(i);
+            }
             panelCrearBuffers = new VistaBuffers(compus, this::bufferCreado);
             ventanaBuffers = new VentanaBuffers(panelCrearBuffers);
             ventanaBuffers.setLocationRelativeTo(this);
@@ -277,7 +337,7 @@ public class main extends javax.swing.JFrame {
     //abre el formulario de crear procesos en su propia ventana, una sola vez
     private void abrirFormularioProceso() {
         if (ventanaProceso == null) {
-            formulario = new FormularioProceso(2, nombresBuffers(), this::procesoCreado);
+            formulario = new FormularioProceso(computadores.len(), nombresBuffers(), this::procesoCreado);
             ventanaProceso = new VistaProceso(formulario);
             ventanaProceso.setLocationRelativeTo(this);
         }
@@ -302,7 +362,11 @@ public class main extends javax.swing.JFrame {
             //cpu bound e i/o bound terminan cuando se les acaban los ciclos
             p.settime(solicitud.getCiclos());
         }
-        Computador destino = solicitud.getComputador() == 2 ? computador2 : computador1;
+        Computador destino = buscarComputador(solicitud.getComputador());
+        if (destino == null) {
+            JOptionPane.showMessageDialog(this, "Ese computador no existe", "Dato invalido", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         destino.agregarProceso(p);
     }
 
@@ -435,7 +499,7 @@ public class main extends javax.swing.JFrame {
     }
 
     //la barra y el texto de la memoria: cuanta esta usada de cuanta hay
-    private static void mostrarRam(Computador c, javax.swing.JProgressBar barra, javax.swing.JLabel etiqueta) {
+    static void mostrarRam(Computador c, javax.swing.JProgressBar barra, javax.swing.JLabel etiqueta) {
         int total = (int) c.getRamt();
         int usada = (int) (c.getRamt() - c.getRam());
         barra.setMaximum(total <= 0 ? 1 : total);
