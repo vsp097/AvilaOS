@@ -6,6 +6,7 @@ package interfaz;
 
 import Data_Structures.Computador;
 import avilaos.GlobalClock;
+import avilaos.Validaciones;
 
 /**
  *
@@ -255,25 +256,26 @@ public class inicio extends javax.swing.JFrame {
 
 
     private void Ingresar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Ingresar1ActionPerformed
-        // TODO add your handling code here:
-        String Cpu1 = CPU1.getText();
-        String Ram1 = RAM1.getText();
-        if ((!Cpu1.equals("") && !Cpu1.equals("Ingrese el CPU:"))&& (!Ram1.equals("") && !Ram1.equals("Ingrese la RAM:"))){
-            try{
-                float r = Float.parseFloat(Ram1);
-                computador1.setCPUt(Cpu1);
-                computador1.setRAMt(r);
-                computador1.settype( (String) type1.getSelectedItem());
-                error1.setText("Listo");
+        try {
+            //el texto de ayuda no cuenta como dato
+            String cpu = CPU1.getText().equals("Ingrese el CPU:") ? "" : CPU1.getText();
+            String ram = RAM1.getText().equals("Ingrese la RAM:") ? "" : RAM1.getText();
+            cpu = Validaciones.leerTexto(cpu, "CPU", 30);
+            float r = Validaciones.leerDecimal(ram, "RAM", 1, 1000000);
+            //si escogio GB se pasa a MB, que es la unidad que usa todo el sistema
+            if ("GB".equals(type1.getSelectedItem())) {
+                r = r * 1024;
+                if (r > 1000000) {
+                    throw new IllegalArgumentException("La RAM no puede pasar de 1000000 MB");
+                }
             }
-            catch (NumberFormatException e){
-                error1.setText("La ram debe de ser un numero");
-            }
-            
-        }else{
-            error1.setText("Complete todos los campos");
+            computador1.setCPUt(cpu);
+            computador1.setRAMt(r);
+            computador1.settype("MB");
+            error1.setText("Listo: " + r + " MB");
+        } catch (IllegalArgumentException e) {
+            error1.setText(e.getMessage());
         }
-        
     }//GEN-LAST:event_Ingresar1ActionPerformed
 
     private void inicioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_inicioActionPerformed
@@ -296,23 +298,25 @@ public class inicio extends javax.swing.JFrame {
 
 
     private void Ingresar2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Ingresar2ActionPerformed
-        // TODO add your handling code here:
-         String Cpu1 = CPU2.getText();
-        String Ram1 = RAM2.getText();
-        if ((!Cpu1.equals("") && !Cpu1.equals("Ingrese el CPU:"))&& (!Ram1.equals("") && !Ram1.equals("Ingrese la RAM:"))){
-            try{
-                float r = Float.parseFloat(Ram1);
-                computador2.setCPUt(Cpu1);
-                computador2.setRAMt(r);
-                computador2.settype( (String) type2.getSelectedItem());
-                error2.setText("Listo");
+        try {
+            //el texto de ayuda no cuenta como dato
+            String cpu = CPU2.getText().equals("Ingrese el CPU:") ? "" : CPU2.getText();
+            String ram = RAM2.getText().equals("Ingrese la RAM:") ? "" : RAM2.getText();
+            cpu = Validaciones.leerTexto(cpu, "CPU", 30);
+            float r = Validaciones.leerDecimal(ram, "RAM", 1, 1000000);
+            //si escogio GB se pasa a MB, que es la unidad que usa todo el sistema
+            if ("GB".equals(type2.getSelectedItem())) {
+                r = r * 1024;
+                if (r > 1000000) {
+                    throw new IllegalArgumentException("La RAM no puede pasar de 1000000 MB");
+                }
             }
-            catch (NumberFormatException e){
-                error2.setText("La ram debe de ser un numero");
-            }
-            
-        }else{
-            error2.setText("Complete todos los campos");
+            computador2.setCPUt(cpu);
+            computador2.setRAMt(r);
+            computador2.settype("MB");
+            error2.setText("Listo: " + r + " MB");
+        } catch (IllegalArgumentException e) {
+            error2.setText(e.getMessage());
         }
     }//GEN-LAST:event_Ingresar2ActionPerformed
 

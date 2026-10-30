@@ -134,7 +134,7 @@ public class Configuracion {
             rango(p.prioridad, nombre + ": la prioridad", 1, 10);
             rango(p.deadline, nombre + ": el deadline", 0, 100000);
             rango(p.computador, nombre + ": el computador", 1, computadores.length);
-            if (p.memoria < 1 || p.memoria > 100000) {
+            if (Float.isNaN(p.memoria) || p.memoria < 1 || p.memoria > 100000) {
                 throw new IllegalArgumentException(nombre + ": la memoria debe estar entre 1 y 100000");
             }
             boolean prodCons = "Productor".equals(p.tipo) || "Consumidor".equals(p.tipo);

@@ -20,6 +20,7 @@ import avilaos.SolicitudProceso;
 import avilaos.Validaciones;
 import java.awt.BorderLayout;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 /**
  *
@@ -126,6 +127,19 @@ public class main extends javax.swing.JFrame {
         pcbComputador2 = new panelPCB();
         pcb1Host.add(pcbComputador1, BorderLayout.CENTER);
         pcb2Host.add(pcbComputador2, BorderLayout.CENTER);
+        //las colas siempre tienen espacio aunque la pantalla sea pequena o tenga letras grandes
+        java.awt.Dimension alturaColas = new java.awt.Dimension(100, 150);
+        colas1.setPreferredSize(alturaColas);
+        colas2.setPreferredSize(alturaColas);
+        colas1.setMinimumSize(alturaColas);
+        colas2.setMinimumSize(alturaColas);
+        panelBuffers.setPreferredSize(new java.awt.Dimension(100, 160));
+        //si aun asi no cabe todo, la parte de los computadores se puede bajar con la rueda del raton
+        getContentPane().remove(panelComputadores);
+        JScrollPane scrollComputadores = new JScrollPane(panelComputadores);
+        scrollComputadores.setBorder(null);
+        scrollComputadores.getVerticalScrollBar().setUnitIncrement(16);
+        getContentPane().add(scrollComputadores, BorderLayout.CENTER);
         //cada computador tiene su panel de politica, que tambien deja cambiar el quantum
         pol1 = new Panelpolitica();
         pol1.setComputador(computador1);
@@ -225,6 +239,23 @@ public class main extends javax.swing.JFrame {
 
     //la configuracion ya viene validada, aqui solo se reparte a quien le toca
     private void aplicarConfiguracion(Configuracion config) {
+        //antes de tocar nada se revisa que en cada computador quepa lo que ya tiene mas los buffers del archivo
+        for (int i = 0; i < config.computadores.length; i++) {
+            float necesita = 0;
+            Computador c = i < computadores.len() ? computadores.retornar(i) : null;
+            if (c != null) {
+                necesita = c.getRamt() - c.getRam();
+            }
+            for (int j = 0; j < config.buffers.length; j++) {
+                if (config.buffers[j].computadorAnfitrion == i + 1) {
+                    necesita += config.buffers[j].capacidad;
+                }
+            }
+            if (necesita > config.computadores[i].ram) {
+                throw new IllegalArgumentException("En el Computador " + (i + 1) + " no cabe todo: necesita "
+                        + necesita + " MB y la configuracion le da " + config.computadores[i].ram + " MB");
+            }
+        }
         gC.setcduration(config.duracionCicloMs);
         txtDuracion.setText(String.valueOf(config.duracionCicloMs));
         //validar() garantiza que hay por lo menos dos computadores
@@ -314,14 +345,22 @@ public class main extends javax.swing.JFrame {
             pcb.setPrioridad(datos.prioridad);
             pcb.setdeadline(datos.deadline);
             pcb.settime(datos.instrucciones);
-            procesoCreado(new SolicitudProceso(pcb, datos.computador, datos.buffer,
-                    datos.ciclos, datos.cadaCuantosCiclos, datos.elementos));
+            try {
+                procesoCreado(new SolicitudProceso(pcb, datos.computador, datos.buffer,
+                        datos.ciclos, datos.cadaCuantosCiclos, datos.elementos));
+            } catch (IllegalArgumentException e) {
+                JOptionPane.showMessageDialog(this, "Proceso " + datos.nombre + ": " + e.getMessage(),
+                        "Aviso", JOptionPane.WARNING_MESSAGE);
+            }
         }
     }
 
     //la ram, la politica y el quantum de un computador
     private void aplicarAComputador(Computador c, Configuracion.ConfigComputador datos) {
+        //lo que ya ocupan los buffers y procesos creados antes sigue ocupado con la RAM nueva
+        float usada = c.getRamt() - c.getRam();
         c.setRAMt(datos.ram);
+        c.useRam(usada);
         PoliticaPlanificacion politica = PoliticaPlanificacion.valueOf(datos.politica);
         c.setPlanificador(SelectorPolitica.crear(politica, datos.quantum));
     }
@@ -362,8 +401,7 @@ public class main extends javax.swing.JFrame {
         if (tipo.equals("Productor") || tipo.equals("Consumidor")) {
             Buffer b = buscarBuffer(solicitud.getBuffer());
             if (b == null) {
-                JOptionPane.showMessageDialog(this, "Ese buffer ya no existe", "Dato invalido", JOptionPane.WARNING_MESSAGE);
-                return;
+                throw new IllegalArgumentException("Ese buffer ya no existe");
             }
             p.setBuffer(b);
             p.setIndiceBuffer(solicitud.getBuffer());
@@ -375,8 +413,12 @@ public class main extends javax.swing.JFrame {
         }
         Computador destino = buscarComputador(solicitud.getComputador());
         if (destino == null) {
-            JOptionPane.showMessageDialog(this, "Ese computador no existe", "Dato invalido", JOptionPane.WARNING_MESSAGE);
-            return;
+            throw new IllegalArgumentException("Ese computador no existe");
+        }
+        //si pide mas memoria que toda la RAM del computador nunca podria entrar
+        if (p.getmem() > destino.getRamt()) {
+            throw new IllegalArgumentException("El proceso pide " + p.getmem() + " MB y " + destino.getNombre()
+                    + " solo tiene " + destino.getRamt() + " MB de RAM en total");
         }
         destino.agregarProceso(p);
     }
