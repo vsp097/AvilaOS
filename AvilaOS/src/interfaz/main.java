@@ -12,6 +12,7 @@ import Data_Structures.PCB;
 import avilaos.Buffer;
 import avilaos.GlobalClock;
 import avilaos.LogEventos;
+import avilaos.Metricas;
 import avilaos.SolicitudProceso;
 import avilaos.Validaciones;
 import java.awt.BorderLayout;
@@ -44,6 +45,9 @@ public class main extends javax.swing.JFrame {
     //el panel de crear buffers y su ventana
     private VistaBuffers panelBuffers;
     private VentanaBuffers ventanaBuffers;
+    //unas solas metricas para los dos computadores y para el panel
+    private Metricas metricas = new Metricas();
+    private PanelMetricas panelMetricas;
     /**
      * Creates new form main
      */
@@ -67,6 +71,9 @@ public class main extends javax.swing.JFrame {
         c2.setLog(log);
         computador1.setNombre("Computador 1");
         computador2.setNombre("Computador 2");
+        //los dos reportan a la misma Metricas, cada uno con su numero
+        computador1.setMetricas(metricas, 0);
+        computador2.setMetricas(metricas, 1);
         armarPaneles();
  
         //cada computador tiene su panel de politica, que tambien deja cambiar el quantum
@@ -94,6 +101,8 @@ public class main extends javax.swing.JFrame {
         pestanas.addTab("Log", new JScrollPane(panelLog));
         pestanas.addTab("PCB Computador 1", new JScrollPane(pcbComputador1));
         pestanas.addTab("PCB Computador 2", new JScrollPane(pcbComputador2));
+        panelMetricas = new PanelMetricas(metricas, 2, 0);
+        pestanas.addTab("Metricas", new JScrollPane(panelMetricas));
         pestanas.setPreferredSize(new Dimension(700, 240));
         getContentPane().add(pestanas, BorderLayout.SOUTH);
         pack();
@@ -202,18 +211,25 @@ public class main extends javax.swing.JFrame {
         final Listas<String> listos2;
         final Listas<String> bloqueados2;
         final Listas<String> terminados2;
-        //mismo candado que usan admitir() y agregarProceso(), para que la ventana no encole a mitad de la copia
-        synchronized (computador1) {
+        //mismo semaforo que usan onTick(), admitir() y agregarProceso(),
+        //para que nadie encole a mitad de la copia
+        computador1.tomar();
+        try {
             nuevos1 = aListas(computador1.getNuevos());
             listos1 = aListas(computador1.getListos());
             bloqueados1 = aListasMotivo(computador1.getBloqueados());
             terminados1 = aListas(computador1.getTerminados());
+        } finally {
+            computador1.soltar();
         }
-        synchronized (computador2) {
+        computador2.tomar();
+        try {
             nuevos2 = aListas(computador2.getNuevos());
             listos2 = aListas(computador2.getListos());
             bloqueados2 = aListasMotivo(computador2.getBloqueados());
             terminados2 = aListas(computador2.getTerminados());
+        } finally {
+            computador2.soltar();
         }
         SwingUtilities.invokeLater(() -> {
             clock.setText(String.valueOf(cycle));

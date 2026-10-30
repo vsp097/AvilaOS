@@ -9,6 +9,7 @@ import avilaos.FCFS;
 import avilaos.Planificador;
 import avilaos.LogEventos;
 import avilaos.Metricas;
+import java.util.concurrent.Semaphore;
 
 /**
  *
@@ -63,8 +64,30 @@ public class Computador implements ClockListener{
     public PCB getEnEjecucion() {
         return enEjecucion;
     }
+
+    //semaforo de java para la exclusion mutua entre el hilo del reloj y el de la ventana
+    private final Semaphore llave = new Semaphore(1);
+
+    //la ventana toma el candado antes de recorrer las colas y lo suelta al terminar
+    public void tomar() {
+        llave.acquireUninterruptibly();
+    }
+
+    public void soltar() {
+        llave.release();
+    }
     
-        public synchronized void admitir() {
+    public void admitir() {
+        tomar();
+        try {
+            admitirInterno();
+        } finally {
+            soltar();
+        }
+    }
+
+    //el cuerpo sin candado, para poder llamarlo desde onTick que ya lo tiene tomado
+    private void admitirInterno() {
         Cola<PCB> siguen = new Cola<>();
         PCB p = Nuevos.Desencolar();
         while (p != null) {
@@ -158,11 +181,16 @@ public class Computador implements ClockListener{
 
     //un proceso nuevo entra a la cola de nuevos y espera a que haya RAM
     public void agregarProceso(PCB p) {
-        p.setstate(EstadoProceso.Nuevo);
-                p.setLlegada(ciclo);
-        p.setTuvoDeadline(p.getdeadline() > 0);
-        Nuevos.Encolar(p);
-        registrar("Proceso " + p.getname() + " llega a la cola de nuevos");
+        tomar();
+        try {
+            p.setstate(EstadoProceso.Nuevo);
+            p.setLlegada(ciclo);
+            p.setTuvoDeadline(p.getdeadline() > 0);
+            Nuevos.Encolar(p);
+            registrar("Proceso " + p.getname() + " llega a la cola de nuevos");
+        } finally {
+            soltar();
+        }
     }
     
     public String getCPU(){
@@ -192,27 +220,32 @@ public class Computador implements ClockListener{
        //lo que hace el computador en cada ciclo del reloj
     @Override
     public void onTick(long cycle) {
-        ciclo = cycle;
-        admitir();
-        revisarBloqueados();
-        revisarDeadlines();
-        if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
-            expropiese();
-        }
-        if (enEjecucion == null) {
-            elegir();
-        }
-                if (enEjecucion == null) {
-            modo = ModoCPU.SO;
-            if (metricas != null) {
-                metricas.registrarCiclo(indice, false);
+        tomar();
+        try {
+            ciclo = cycle;
+            admitirInterno();
+            revisarBloqueados();
+            revisarDeadlines();
+            if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
+                expropiese();
             }
-            return;
+            if (enEjecucion == null) {
+                elegir();
+            }
+            if (enEjecucion == null) {
+                modo = ModoCPU.SO;
+                if (metricas != null) {
+                    metricas.registrarCiclo(indice, false);
+                }
+                return;
+            }
+            if (metricas != null) {
+                metricas.registrarCiclo(indice, true);
+            }
+            ejecutar();
+        } finally {
+            soltar();
         }
-        if (metricas != null) {
-            metricas.registrarCiclo(indice, true);
-        }
-        ejecutar();
     }
  
     //revisa los bloqueados o sea los que despertaron por un semaforo o terminaron su e/s
