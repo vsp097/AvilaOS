@@ -184,6 +184,7 @@ public class Computador implements ClockListener{
         tomar();
         try {
             p.setstate(EstadoProceso.Nuevo);
+            p.setComputador(nombre);
             p.setLlegada(ciclo);
             p.setTuvoDeadline(p.getdeadline() > 0);
             Nuevos.Encolar(p);
@@ -400,6 +401,12 @@ public class Computador implements ClockListener{
         Terminados.Encolar(p);
         RAM += p.getmem();
         registrar("Proceso " + p.getname() + " termina: " + motivo);
+        //si era productor o consumidor y se quedo a mitad de un elemento, suelta sus semaforos
+        if (p.getBuffer() != null && p.getPaso() != 0) {
+            p.getBuffer().soltarSemaforos(p);
+            p.setPaso(0);
+            registrar("Proceso " + p.getname() + " suelta los semaforos del buffer " + p.getBuffer().getNombre());
+        }
         //si tenia deadline y llego a 0, se le acabo el tiempo y no cuenta como completado
         boolean vencio = p.getTuvoDeadline() && p.getdeadline() == 0;
         if (metricas != null) {

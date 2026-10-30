@@ -35,6 +35,7 @@ public class panelPCB extends javax.swing.JPanel {
         if (p == null) {
             lblId.setText("Ningun proceso seleccionado");
             lblNombre.setText("");
+            lblComputador.setText("");
             lblEstado.setText("");
             lblTipo.setText("");
             lblPC.setText("");
@@ -47,6 +48,7 @@ public class panelPCB extends javax.swing.JPanel {
         }
         lblId.setText("ID: " + p.getId());
         lblNombre.setText("Nombre: " + p.getname());
+        lblComputador.setText("Computador: " + p.getComputador());
         lblEstado.setText("Estado: " + p.getstate());
         lblTipo.setText("Tipo: " + p.gettype());
         lblPC.setText("PC: " + p.getpc());
@@ -93,6 +95,7 @@ public class panelPCB extends javax.swing.JPanel {
         jPanel1 = new javax.swing.JPanel();
         lblId = new javax.swing.JLabel();
         lblNombre = new javax.swing.JLabel();
+        lblComputador = new javax.swing.JLabel();
         lblEstado = new javax.swing.JLabel();
         lblTipo = new javax.swing.JLabel();
         lblPC = new javax.swing.JLabel();
@@ -105,13 +108,16 @@ public class panelPCB extends javax.swing.JPanel {
         setLayout(new java.awt.BorderLayout());
 
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("En la CPU"));
-        jPanel1.setLayout(new java.awt.GridLayout(5, 2, 10, 0));
+        jPanel1.setLayout(new java.awt.GridLayout(6, 2, 10, 0));
 
         lblId.setText("ID:");
         jPanel1.add(lblId);
 
         lblNombre.setText("Nombre:");
         jPanel1.add(lblNombre);
+
+        lblComputador.setText("Computador:");
+        jPanel1.add(lblComputador);
 
         lblEstado.setText("Estado:");
         jPanel1.add(lblEstado);
@@ -143,6 +149,7 @@ public class panelPCB extends javax.swing.JPanel {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JLabel lblComputador;
     private javax.swing.JLabel lblDeadline;
     private javax.swing.JLabel lblEstado;
     private javax.swing.JLabel lblId;

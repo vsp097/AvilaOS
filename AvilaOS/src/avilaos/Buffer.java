@@ -196,6 +196,32 @@ public class Buffer {
     public boolean estaLejos(Computador c) {
         return computador != null && computador != c;
     }
+    //si un productor o consumidor termina a mitad de los 5 pasos (por deadline)
+    //hay que devolver los semaforos que tenia, si no los demas se quedan bloqueados para siempre
+    //el paso guardado es el siguiente que le tocaba hacer
+    public void soltarSemaforos(PCB proceso) {
+        int paso = proceso.getPaso();
+        if (paso == 0) {
+            return;
+        }
+        //en el paso 2 o 3 todavia tenia el mutex
+        if (paso == 2 || paso == 3) {
+            despertar(mutex.semaSignal());
+        }
+        boolean esProductor = proceso.gettype().equals("Productor");
+        //si ya metio o saco el elemento (paso 3 o 4) se hace el signal que le faltaba
+        //si no, se devuelve el wait que hizo en el paso 0
+        if (esProductor && paso >= 3) {
+            despertar(lleno.semaSignal());
+        } else if (esProductor) {
+            despertar(vacio.semaSignal());
+        } else if (paso >= 3) {
+            despertar(vacio.semaSignal());
+        } else {
+            despertar(lleno.semaSignal());
+        }
+    }
+
     //si el semaforo desperto a alguien lo marca como listo para que su computador lo pase a la cola de listos
     private void despertar(PCB proceso) {
         if (proceso != null) {
