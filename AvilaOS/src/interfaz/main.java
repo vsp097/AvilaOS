@@ -12,12 +12,10 @@ import Data_Structures.PCB;
 import avilaos.Buffer;
 import avilaos.GlobalClock;
 import avilaos.LogEventos;
-import avilaos.PoliticaPlanificacion;
-import avilaos.SelectorPolitica;
 import avilaos.SolicitudProceso;
+import avilaos.Validaciones;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -67,15 +65,17 @@ public class main extends javax.swing.JFrame {
         log = new LogEventos();
         c.setLog(log);
         c2.setLog(log);
+        computador1.setNombre("Computador 1");
+        computador2.setNombre("Computador 2");
         armarPaneles();
  
-        //los menus de scheduler: jComboBox1 y jComboBox2 ya no estan en el formulario,
-        //asi que uso jComboBox3 (computador 1) y jComboBox4 (computador 2) y les pongo las politicas
-        String[] politicas = {"FCFS", "EDF", "Round Robin", "Prioridades apropiadas"};
-        jComboBox3.setModel(new DefaultComboBoxModel<>(politicas));
-        jComboBox4.setModel(new DefaultComboBoxModel<>(politicas));
-        jComboBox3.addActionListener(e -> cambiarPolitica(computador1, jComboBox3.getSelectedIndex()));
-        jComboBox4.addActionListener(e -> cambiarPolitica(computador2, jComboBox4.getSelectedIndex()));
+        //cada computador tiene su panel de politica, que tambien deja cambiar el quantum
+        Panelpolitica pol1 = new Panelpolitica();
+        pol1.setComputador(computador1);
+        politica1.add(pol1, BorderLayout.CENTER);
+        Panelpolitica pol2 = new Panelpolitica();
+        pol2.setComputador(computador2);
+        politica2.add(pol2, BorderLayout.CENTER);
  
         gC.setClockListener(this::alCiclo);
         //el reloj arranca al final, cuando ya tiene todo conectado
@@ -189,38 +189,50 @@ public class main extends javax.swing.JFrame {
         destino.agregarProceso(p);
     }
 
-    private static final PoliticaPlanificacion[] POLITICAS = {
-        PoliticaPlanificacion.FCFS,
-        PoliticaPlanificacion.EDF,
-        PoliticaPlanificacion.ROUND_ROBIN,
-        PoliticaPlanificacion.PRIORIDADES
-    };
-    private static final int QUANTUM_POR_DEFECTO = 4;
-    //crea el planificador escogido y se lo pasa al computador
 
  
     //esto lo llama el reloj en su propio hilo, justo despues de que los computadores hicieron su tick
     //por eso aqui es seguro recorrer las colas, y a la ventana solo le paso los modelos ya armados
     private void alCiclo(long cycle) {
-        final Listas<String> nuevos;
-        final Listas <String> listos;
-        final Listas <String> bloqueados;
-        final Listas <String> terminados;
+        final Listas<String> nuevos1;
+        final Listas<String> listos1;
+        final Listas<String> bloqueados1;
+        final Listas<String> terminados1;
+        final Listas<String> nuevos2;
+        final Listas<String> listos2;
+        final Listas<String> bloqueados2;
+        final Listas<String> terminados2;
         //mismo candado que usan admitir() y agregarProceso(), para que la ventana no encole a mitad de la copia
-                synchronized (computador1) {
-            nuevos = aListas(computador1.getNuevos());
-            listos = aListas(computador1.getListos());
-            bloqueados = aListas(computador1.getBloqueados());
-            terminados = aListas(computador1.getTerminados());
+        synchronized (computador1) {
+            nuevos1 = aListas(computador1.getNuevos());
+            listos1 = aListas(computador1.getListos());
+            bloqueados1 = aListasMotivo(computador1.getBloqueados());
+            terminados1 = aListas(computador1.getTerminados());
+        }
+        synchronized (computador2) {
+            nuevos2 = aListas(computador2.getNuevos());
+            listos2 = aListas(computador2.getListos());
+            bloqueados2 = aListasMotivo(computador2.getBloqueados());
+            terminados2 = aListas(computador2.getTerminados());
         }
         SwingUtilities.invokeLater(() -> {
             clock.setText(String.valueOf(cycle));
-            //4. las 4 listas con las colas reales
-            mostrar(jList1, nuevos);
-            mostrar(jList2, listos);
-            mostrar(jList3, bloqueados);
-            mostrar(jList4, terminados);
-            //5. paneles: se actualizan en cada ciclo
+            //las 4 colas del computador 1
+            mostrar(jList2, nuevos1);
+            mostrar(jList3, listos1);
+            mostrar(jList5, bloqueados1);
+            mostrar(jList6, terminados1);
+            //las 4 colas del computador 2
+            mostrar(jList4, nuevos2);
+            mostrar(jList1, listos2);
+            mostrar(jList7, bloqueados2);
+            mostrar(jList8, terminados2);
+            //la ram y el modo de cada computador
+            RAM1.setText(textoRam(computador1));
+            RAM2.setText(textoRam(computador2));
+            modo1.setText("Modo: " + computador1.getmode());
+            modo2.setText("Modo: " + computador2.getmode());
+            //paneles: se actualizan en cada ciclo
             panelLog.actualizar();
             pcbComputador1.mostrar(computador1.getEnEjecucion());
             pcbComputador2.mostrar(computador2.getEnEjecucion());
@@ -229,18 +241,39 @@ public class main extends javax.swing.JFrame {
                     panelesBuffer.retornar(i).actualizar();
                 }
             }
- 
         });
-
     }
-    private void cambiarPolitica(Computador comp, int indice) {
-        if (comp == null || indice < 0 || indice >= POLITICAS.length) {
-            return;
+
+    //la ram total, la que esta usada y la que queda libre
+    private static String textoRam(Computador c) {
+        float libre = c.getRam();
+        float total = c.getRamt();
+        return "total " + total + "   usada " + (total - libre) + "   libre " + libre;
+    }
+
+    //igual que aListas pero a los bloqueados les pone el motivo
+    static Listas aListasMotivo(Cola<PCB> cola) {
+        Listas<String> lista = null;
+        Cola<PCB> temporal = new Cola<>();
+        PCB p = cola.Desencolar();
+        while (p != null) {
+            Nodo<String> nodo = new Nodo<>(p.getname() + "  (" + p.getMotivo() + ")");
+            if (lista == null) {
+                lista = new Listas<>(nodo);
+            } else {
+                lista.insertar(nodo);
+            }
+            temporal.Encolar(p);
+            p = cola.Desencolar();
         }
-        comp.setPlanificador(SelectorPolitica.crear(POLITICAS[indice], QUANTUM_POR_DEFECTO));
+        p = temporal.Desencolar();
+        while (p != null) {
+            cola.Encolar(p);
+            p = temporal.Desencolar();
+        }
+        return lista;
     }
 
- 
     //copia el contenido de una cola a un modelo de lista sin cambiarle el orden a la cola
     static Listas aListas(Cola <PCB> cola) {
         Listas<String> lista = null;
@@ -299,8 +332,6 @@ public class main extends javax.swing.JFrame {
         jSeparator6 = new javax.swing.JSeparator();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
-        jComboBox3 = new javax.swing.JComboBox<>();
-        jComboBox4 = new javax.swing.JComboBox<>();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         RAM1 = new javax.swing.JLabel();
@@ -317,6 +348,21 @@ public class main extends javax.swing.JFrame {
         jList3 = new javax.swing.JList<>();
         jScrollPane4 = new javax.swing.JScrollPane();
         jList4 = new javax.swing.JList<>();
+        jScrollPane9 = new javax.swing.JScrollPane();
+        jList5 = new javax.swing.JList<>();
+        jScrollPane10 = new javax.swing.JScrollPane();
+        jList6 = new javax.swing.JList<>();
+        jScrollPane11 = new javax.swing.JScrollPane();
+        jList7 = new javax.swing.JList<>();
+        jScrollPane12 = new javax.swing.JScrollPane();
+        jList8 = new javax.swing.JList<>();
+        politica1 = new javax.swing.JPanel();
+        politica2 = new javax.swing.JPanel();
+        modo1 = new javax.swing.JLabel();
+        modo2 = new javax.swing.JLabel();
+        lblDuracion = new javax.swing.JLabel();
+        txtDuracion = new javax.swing.JTextField();
+        btnDuracion = new javax.swing.JButton();
         jSeparator7 = new javax.swing.JSeparator();
         jSeparator8 = new javax.swing.JSeparator();
         jLabel13 = new javax.swing.JLabel();
@@ -351,10 +397,7 @@ public class main extends javax.swing.JFrame {
 
         jLabel6.setText("Sincronizador");
 
-        jComboBox3.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Listo", "Terminado", "Bloqueado", "Finalizado" }));
 
-        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Listo", "Terminado", "Bloqueado", "Finalizado" }));
-        jComboBox4.addActionListener(this::jComboBox4ActionPerformed);
 
         jLabel7.setText("CPU:");
 
@@ -372,13 +415,46 @@ public class main extends javax.swing.JFrame {
 
         CPU2.setText(".");
 
+        jScrollPane1.setBorder(javax.swing.BorderFactory.createTitledBorder("Listos"));
         jScrollPane1.setViewportView(jList1);
 
+        jScrollPane2.setBorder(javax.swing.BorderFactory.createTitledBorder("Nuevos"));
         jScrollPane2.setViewportView(jList2);
 
+        jScrollPane3.setBorder(javax.swing.BorderFactory.createTitledBorder("Listos"));
         jScrollPane3.setViewportView(jList3);
 
+        jScrollPane4.setBorder(javax.swing.BorderFactory.createTitledBorder("Nuevos"));
         jScrollPane4.setViewportView(jList4);
+
+        jScrollPane9.setBorder(javax.swing.BorderFactory.createTitledBorder("Bloqueados"));
+        jScrollPane9.setViewportView(jList5);
+
+        jScrollPane10.setBorder(javax.swing.BorderFactory.createTitledBorder("Terminados"));
+        jScrollPane10.setViewportView(jList6);
+
+        jScrollPane11.setBorder(javax.swing.BorderFactory.createTitledBorder("Bloqueados"));
+        jScrollPane11.setViewportView(jList7);
+
+        jScrollPane12.setBorder(javax.swing.BorderFactory.createTitledBorder("Terminados"));
+        jScrollPane12.setViewportView(jList8);
+
+        politica1.setBorder(javax.swing.BorderFactory.createTitledBorder("Politica Computador 1"));
+        politica1.setLayout(new java.awt.BorderLayout());
+
+        politica2.setBorder(javax.swing.BorderFactory.createTitledBorder("Politica Computador 2"));
+        politica2.setLayout(new java.awt.BorderLayout());
+
+        modo1.setText("Modo:");
+
+        modo2.setText("Modo:");
+
+        lblDuracion.setText("Duracion del ciclo (ms):");
+
+        txtDuracion.setText("1000");
+
+        btnDuracion.setText("Aplicar");
+        btnDuracion.addActionListener(this::btnDuracionActionPerformed);
 
         jLabel13.setText("Ciclos del Reloj:");
 
@@ -410,9 +486,6 @@ public class main extends javax.swing.JFrame {
                         .addComponent(jLabel12))
                     .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)))
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(640, 640, 640)
-                .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
-            .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(490, 490, 490)
                 .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 260, javax.swing.GroupLayout.PREFERRED_SIZE))
             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -420,10 +493,7 @@ public class main extends javax.swing.JFrame {
                 .addComponent(jSeparator3, javax.swing.GroupLayout.PREFERRED_SIZE, 930, javax.swing.GroupLayout.PREFERRED_SIZE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(660, 660, 660)
-                .addComponent(RAM2, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(152, 152, 152)
-                .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(RAM2, javax.swing.GroupLayout.PREFERRED_SIZE, 280, javax.swing.GroupLayout.PREFERRED_SIZE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(232, 232, 232)
                 .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -447,7 +517,7 @@ public class main extends javax.swing.JFrame {
                 .addComponent(jLabel8))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(192, 192, 192)
-                .addComponent(RAM1, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(RAM1, javax.swing.GroupLayout.PREFERRED_SIZE, 260, javax.swing.GroupLayout.PREFERRED_SIZE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(510, 510, 510)
                 .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -471,6 +541,37 @@ public class main extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(730, 730, 730)
                 .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(30, 30, 30)
+                .addComponent(jScrollPane9, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(260, 260, 260)
+                .addComponent(jScrollPane10, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(510, 510, 510)
+                .addComponent(jScrollPane11, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(740, 740, 740)
+                .addComponent(jScrollPane12, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(30, 30, 30)
+                .addComponent(politica1, javax.swing.GroupLayout.PREFERRED_SIZE, 430, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(510, 510, 510)
+                .addComponent(politica2, javax.swing.GroupLayout.PREFERRED_SIZE, 430, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(250, 250, 250)
+                .addComponent(modo1, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(700, 700, 700)
+                .addComponent(modo2, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(30, 30, 30)
+                .addComponent(lblDuracion, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(5, 5, 5)
+                .addComponent(txtDuracion, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(5, 5, 5)
+                .addComponent(btnDuracion, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -478,13 +579,16 @@ public class main extends javax.swing.JFrame {
                 .addGap(9, 9, 9)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel13)
-                    .addComponent(clock, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(clock, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblDuracion, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtDuracion)
+                    .addComponent(btnDuracion))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(40, 40, 40)
                         .addComponent(Cpu1, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(100, 100, 100)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(112, 112, 112)
                         .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -493,9 +597,6 @@ public class main extends javax.swing.JFrame {
                         .addComponent(jLabel12)
                         .addGap(22, 22, 22)
                         .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(110, 110, 110)
-                        .addComponent(jComboBox3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(105, 105, 105)
@@ -505,19 +606,16 @@ public class main extends javax.swing.JFrame {
                         .addComponent(RAM2, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(112, 112, 112)
-                        .addComponent(jComboBox4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(112, 112, 112)
                         .addComponent(jSeparator6, javax.swing.GroupLayout.PREFERRED_SIZE, 360, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(160, 160, 160)
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(40, 40, 40)
                         .addComponent(jLabel7))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(160, 160, 160)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(40, 40, 40)
                         .addComponent(CPU2, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -530,7 +628,7 @@ public class main extends javax.swing.JFrame {
                         .addComponent(RAM1, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(160, 160, 160)
-                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(40, 40, 40)
                         .addComponent(jLabel11))
@@ -550,7 +648,32 @@ public class main extends javax.swing.JFrame {
                     .addComponent(jSeparator8, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(110, 110, 110)
-                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(280, 280, 280)
+                        .addComponent(jScrollPane9, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(280, 280, 280)
+                        .addComponent(jScrollPane10, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(280, 280, 280)
+                        .addComponent(jScrollPane11, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(280, 280, 280)
+                        .addComponent(jScrollPane12, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(395, 395, 395)
+                        .addComponent(politica1, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(395, 395, 395)
+                        .addComponent(politica2, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(40, 40, 40)
+                        .addComponent(modo1, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(40, 40, 40)
+                        .addComponent(modo2, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    ))
         );
 
         getContentPane().add(jPanel1, java.awt.BorderLayout.CENTER);
@@ -582,13 +705,20 @@ public class main extends javax.swing.JFrame {
         abrirVistaBuffers();
     }//GEN-LAST:event_vista2MouseClicked
 
+    private void btnDuracionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDuracionActionPerformed
+        try {
+            //la duracion del ciclo se puede cambiar con la simulacion corriendo
+            int ms = Validaciones.leerEntero(txtDuracion.getText(), "Duracion del ciclo", 50, 10000);
+            gC.setcduration(ms);
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), "Dato invalido", JOptionPane.WARNING_MESSAGE);
+        }
+    }//GEN-LAST:event_btnDuracionActionPerformed
+
     private void vista1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vista1MouseClicked
         abrirFormularioProceso();
     }//GEN-LAST:event_vista1MouseClicked
 
-    private void jComboBox4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox4ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBox4ActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -597,8 +727,6 @@ public class main extends javax.swing.JFrame {
     private javax.swing.JLabel RAM1;
     private javax.swing.JLabel RAM2;
     private javax.swing.JLabel clock;
-    private javax.swing.JComboBox<String> jComboBox3;
-    private javax.swing.JComboBox<String> jComboBox4;
     private javax.swing.JEditorPane jEditorPane1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
@@ -615,6 +743,21 @@ public class main extends javax.swing.JFrame {
     private javax.swing.JList<String> jList2;
     private javax.swing.JList<String> jList3;
     private javax.swing.JList<String> jList4;
+    private javax.swing.JList<String> jList5;
+    private javax.swing.JList<String> jList6;
+    private javax.swing.JList<String> jList7;
+    private javax.swing.JList<String> jList8;
+    private javax.swing.JScrollPane jScrollPane9;
+    private javax.swing.JScrollPane jScrollPane10;
+    private javax.swing.JScrollPane jScrollPane11;
+    private javax.swing.JScrollPane jScrollPane12;
+    private javax.swing.JLabel modo1;
+    private javax.swing.JLabel modo2;
+    private javax.swing.JLabel lblDuracion;
+    private javax.swing.JTextField txtDuracion;
+    private javax.swing.JButton btnDuracion;
+    private javax.swing.JPanel politica1;
+    private javax.swing.JPanel politica2;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
