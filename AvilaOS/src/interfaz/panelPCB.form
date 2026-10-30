@@ -31,7 +31,7 @@
 
       <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
         <Property name="columns" type="int" value="2"/>
-        <Property name="rows" type="int" value="5"/>
+        <Property name="rows" type="int" value="6"/>
         <Property name="horizontalGap" type="int" value="10"/>
       </Layout>
       <SubComponents>
@@ -40,6 +40,9 @@
         </Component>
         <Component class="javax.swing.JLabel" name="lblNombre">
           <Properties><Property name="text" type="java.lang.String" value="Nombre:"/></Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="lblComputador">
+          <Properties><Property name="text" type="java.lang.String" value="Computador:"/></Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="lblEstado">
           <Properties><Property name="text" type="java.lang.String" value="Estado:"/></Properties>
