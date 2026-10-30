@@ -32,7 +32,7 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="vista2">
           <Properties>
-            <Property name="text" type="java.lang.String" value="vista 2"/>
+            <Property name="text" type="java.lang.String" value="buffers"/>
           </Properties>
           <Events>
             <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="vista2MouseClicked"/>

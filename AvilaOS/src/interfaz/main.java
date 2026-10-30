@@ -43,6 +43,9 @@ public class main extends javax.swing.JFrame {
     //el formulario de crear procesos y su ventana, se guardan para reusarlos
     private FormularioProceso formulario;
     private VistaProceso ventanaProceso;
+    //el panel de crear buffers y su ventana
+    private VistaBuffers panelBuffers;
+    private VentanaBuffers ventanaBuffers;
     /**
      * Creates new form main
      */
@@ -134,6 +137,23 @@ public class main extends javax.swing.JFrame {
             nombres[i] = buffers.retornar(i).getNombre();
         }
         return nombres;
+    }
+
+    //abre el panel de crear buffers en su propia ventana, una sola vez
+    private void abrirVistaBuffers() {
+        if (ventanaBuffers == null) {
+            Computador[] compus = {computador1, computador2};
+            panelBuffers = new VistaBuffers(compus, this::bufferCreado);
+            ventanaBuffers = new VentanaBuffers(panelBuffers);
+            ventanaBuffers.setLocationRelativeTo(this);
+        }
+        ventanaBuffers.setVisible(true);
+        ventanaBuffers.toFront();
+    }
+
+    //aqui llega el buffer que acaba de crear la vista de buffers
+    private void bufferCreado(Buffer b, int indice) {
+        agregarBuffer(b);
     }
 
     //abre el formulario de crear procesos en su propia ventana, una sola vez
@@ -545,7 +565,7 @@ public class main extends javax.swing.JFrame {
         });
         jMenuBar1.add(vista1);
 
-        vista2.setText("vista 2");
+        vista2.setText("buffers");
         vista2.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 vista2MouseClicked(evt);
@@ -559,8 +579,7 @@ public class main extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void vista2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vista2MouseClicked
-        // TODO add your handling code here:
-        
+        abrirVistaBuffers();
     }//GEN-LAST:event_vista2MouseClicked
 
     private void vista1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vista1MouseClicked
