@@ -45,6 +45,11 @@ public class VistaConfiguracion extends javax.swing.JPanel {
         this(null);
     }
 
+    //despues de aplicar una vez el boton se apaga, para no reiniciar la RAM con procesos corriendo
+    public void desactivarAplicar() {
+        btnAplicar.setEnabled(false);
+    }
+
     public VistaConfiguracion(ConfiguracionListener listener) {
         initComponents();
         this.listener = listener;

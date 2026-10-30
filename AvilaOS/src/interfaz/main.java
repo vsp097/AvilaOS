@@ -190,7 +190,41 @@ public class main extends javax.swing.JFrame {
         //validar() garantiza que hay por lo menos dos computadores
         aplicarAComputador(computador1, config.computadores[0]);
         aplicarAComputador(computador2, config.computadores[1]);
+        //primero los buffers, porque los productores y consumidores los necesitan
+        crearBuffers(config);
+        crearProcesos(config);
+        //se aplica una sola vez: hacerlo con procesos corriendo reiniciaria la RAM
+        panelConfiguracion.desactivarAplicar();
         JOptionPane.showMessageDialog(this, "Configuracion aplicada");
+    }
+
+    //crea los buffers del archivo, en el mismo orden para que los procesos los encuentren
+    private void crearBuffers(Configuracion config) {
+        for (int i = 0; i < config.buffers.length; i++) {
+            Configuracion.ConfigBuffer datos = config.buffers[i];
+            Buffer b = new Buffer("B" + (i + 1), datos.capacidad);
+            Computador anfitrion = datos.computadorAnfitrion == 2 ? computador2 : computador1;
+            if (!b.setComputador(anfitrion)) {
+                JOptionPane.showMessageDialog(this, "El buffer B" + (i + 1)
+                        + " no cabe en la RAM del Computador " + datos.computadorAnfitrion,
+                        "Aviso", JOptionPane.WARNING_MESSAGE);
+            }
+            //se agrega igual, para que las posiciones sigan cuadrando con el archivo
+            agregarBuffer(b);
+        }
+    }
+
+    //crea los procesos del archivo por el mismo camino que usa el formulario
+    private void crearProcesos(Configuracion config) {
+        for (int i = 0; i < config.procesos.length; i++) {
+            Configuracion.ConfigProceso datos = config.procesos[i];
+            PCB pcb = new PCB(FormularioProceso.siguienteId(), datos.nombre, 0, datos.tipo, datos.memoria);
+            pcb.setPrioridad(datos.prioridad);
+            pcb.setdeadline(datos.deadline);
+            pcb.settime(datos.instrucciones);
+            procesoCreado(new SolicitudProceso(pcb, datos.computador, datos.buffer,
+                    datos.ciclos, datos.cadaCuantosCiclos, datos.elementos));
+        }
     }
 
     //la ram, la politica y el quantum de un computador

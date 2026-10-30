@@ -27,6 +27,13 @@ public class FormularioProceso extends javax.swing.JPanel {
     //contador para darle un id distinto a cada proceso
     private static int contadorId = 1;
 
+    //el contador vive aqui para que los id no se repitan en todo el sistema
+    public static int siguienteId() {
+        int id = contadorId;
+        contadorId++;
+        return id;
+    }
+
     private ProcesoCreadoListener listener;
 
     //este constructor vacio lo dejo por si otra ventana ya lo usa
@@ -356,8 +363,7 @@ public class FormularioProceso extends javax.swing.JPanel {
             }
 
             //armo el pcb, lo que no recibe el constructor va con set
-            PCB pcb = new PCB(contadorId, nombre, 0, tipo, memoria);
-            contadorId++;
+            PCB pcb = new PCB(siguienteId(), nombre, 0, tipo, memoria);
             pcb.setPrioridad(prioridad);
             pcb.setdeadline(deadline);
             pcb.settime(instrucciones);
