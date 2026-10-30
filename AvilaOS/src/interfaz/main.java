@@ -522,6 +522,7 @@ public class main extends javax.swing.JFrame {
         lblDuracion = new javax.swing.JLabel();
         txtDuracion = new javax.swing.JTextField();
         btnDuracion = new javax.swing.JButton();
+        btnPausa = new javax.swing.JButton();
         ayuda = new javax.swing.JLabel();
         panelComputadores = new javax.swing.JPanel();
         comp1 = new javax.swing.JPanel();
@@ -608,6 +609,10 @@ public class main extends javax.swing.JFrame {
         btnDuracion.setText("Aplicar");
         btnDuracion.addActionListener(this::btnDuracionActionPerformed);
         panelDuracion.add(btnDuracion);
+
+        btnPausa.setText("Pausar");
+        btnPausa.addActionListener(this::btnPausaActionPerformed);
+        panelDuracion.add(btnPausa);
 
         filaCiclo.add(panelDuracion, java.awt.BorderLayout.EAST);
 
@@ -803,6 +808,19 @@ public class main extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnDuracionActionPerformed
 
+    private void btnPausaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPausaActionPerformed
+        //pausa o reanuda el reloj global; mientras esta en pausa ningun computador avanza
+        if (gC.isPaused()) {
+            gC.reanudar();
+            btnPausa.setText("Pausar");
+            log.registrar((int) gC.getCiclo(), "Simulacion reanudada");
+        } else {
+            gC.pausar();
+            btnPausa.setText("Reanudar");
+            log.registrar((int) gC.getCiclo(), "Simulacion en pausa");
+        }
+    }//GEN-LAST:event_btnPausaActionPerformed
+
     private void btnSimulacionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimulacionActionPerformed
         toFront();
     }//GEN-LAST:event_btnSimulacionActionPerformed
@@ -844,6 +862,7 @@ public class main extends javax.swing.JFrame {
     private javax.swing.JButton btnCrearBuffer;
     private javax.swing.JButton btnCrearProceso;
     private javax.swing.JButton btnDuracion;
+    private javax.swing.JButton btnPausa;
     private javax.swing.JButton btnLog;
     private javax.swing.JButton btnMetricas;
     private javax.swing.JButton btnSimulacion;
