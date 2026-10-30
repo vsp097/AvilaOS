@@ -12,6 +12,10 @@ public class Validaciones {
             throw new IllegalArgumentException("El campo " + campo + " no puede estar vacio");
         }
         String limpio = texto.trim();
+        //los signos < y > no se dejan porque Java los podria leer como formato (html) en las listas
+        if (limpio.contains("<") || limpio.contains(">")) {
+            throw new IllegalArgumentException("El campo " + campo + " no puede tener los signos < o >");
+        }
         if (limpio.length() > largoMax) {
             throw new IllegalArgumentException("El campo " + campo + " no puede tener mas de " + largoMax + " caracteres");
         }

@@ -11,6 +11,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import org.jfree.chart.ChartFactory;
@@ -35,6 +36,8 @@ public class PanelMetricas extends javax.swing.JPanel {
 
     //una linea de la grafica por cada computador
     private XYSeries[] series;
+    //una linea para cada grafica del sistema: throughput, tasa de exito y tiempo de espera
+    private XYSeries[] seriesSistema = new XYSeries[3];
     //celdas de la tabla de computadores: una fila por computador y una ultima para el sistema
     private JLabel[][] celdas;
     //celdas de la tabla de buffers
@@ -92,7 +95,8 @@ public class PanelMetricas extends javax.swing.JPanel {
         }
     }
 
-    //arma la grafica con todas las cpu en el mismo grafico dentro de pnlGrafica
+    //arma las graficas en pestanas dentro de pnlGrafica
+    //la primera tiene todas las cpu juntas, las otras son del sistema completo
     private void armarGrafica() {
         XYSeriesCollection datos = new XYSeriesCollection();
         series = new XYSeries[computadores];
@@ -105,8 +109,30 @@ public class PanelMetricas extends javax.swing.JPanel {
                 datos, PlotOrientation.VERTICAL, true, true, false);
         //la utilizacion siempre va de 0 a 100
         grafica.getXYPlot().getRangeAxis().setRange(0, 100);
+
+        JTabbedPane pestanas = new JTabbedPane();
+        pestanas.addTab("Utilizacion", new ChartPanel(grafica));
+        pestanas.addTab("Throughput", graficaSistema(Metricas.THROUGHPUT,
+                "Throughput del sistema", "Procesos por ciclo"));
+        pestanas.addTab("Tasa de exito", graficaSistema(Metricas.EXITO,
+                "Deadlines cumplidos", "Cumplidos (%)"));
+        pestanas.addTab("Tiempo de espera", graficaSistema(Metricas.ESPERA,
+                "Tiempo de espera promedio", "Ciclos"));
         pnlGrafica.setLayout(new BorderLayout());
-        pnlGrafica.add(new ChartPanel(grafica), BorderLayout.CENTER);
+        pnlGrafica.add(pestanas, BorderLayout.CENTER);
+    }
+
+    //una grafica con una sola linea del sistema
+    private ChartPanel graficaSistema(int cual, String titulo, String eje) {
+        seriesSistema[cual] = new XYSeries("Sistema");
+        XYSeriesCollection datos = new XYSeriesCollection(seriesSistema[cual]);
+        JFreeChart grafica = ChartFactory.createXYLineChart(
+                titulo, "Ciclo", eje, datos, PlotOrientation.VERTICAL, false, true, false);
+        //la tasa de exito es un porcentaje, asi que tambien va de 0 a 100
+        if (cual == Metricas.EXITO) {
+            grafica.getXYPlot().getRangeAxis().setRange(0, 100);
+        }
+        return new ChartPanel(grafica);
     }
 
     //arma una tabla con una fila de titulos y una fila por cada nombre
@@ -157,6 +183,15 @@ public class PanelMetricas extends javax.swing.JPanel {
                 series[c].add((i + 1) * ciclosPorMuestra, metricas.getMuestra(c, i), false);
             }
             series[c].fireSeriesChanged();
+        }
+        //y las tres graficas del sistema
+        int cantidadSistema = metricas.getCantidadMuestrasSistema();
+        for (int g = 0; g < 3; g++) {
+            seriesSistema[g].clear();
+            for (int i = 0; i < cantidadSistema; i++) {
+                seriesSistema[g].add((i + 1) * ciclosPorMuestra, metricas.getMuestraSistema(g, i), false);
+            }
+            seriesSistema[g].fireSeriesChanged();
         }
     }
 
