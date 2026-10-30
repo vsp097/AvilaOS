@@ -33,6 +33,9 @@ public class main extends javax.swing.JFrame {
     //todos los computadores del reloj; el 1 y el 2 se ven aqui y del 3 en adelante en su propia ventana
     private Listas<Computador> computadores;
     private Listas<VentanaComputador> ventanasExtra = null;
+    //los paneles de politica del computador 1 y 2
+    private Panelpolitica pol1;
+    private Panelpolitica pol2;
     private GlobalClock gC;
     private LogEventos log;
     private Panellog panelLog;
@@ -124,10 +127,10 @@ public class main extends javax.swing.JFrame {
         pcb1Host.add(pcbComputador1, BorderLayout.CENTER);
         pcb2Host.add(pcbComputador2, BorderLayout.CENTER);
         //cada computador tiene su panel de politica, que tambien deja cambiar el quantum
-        Panelpolitica pol1 = new Panelpolitica();
+        pol1 = new Panelpolitica();
         pol1.setComputador(computador1);
         pol1Host.add(pol1, BorderLayout.CENTER);
-        Panelpolitica pol2 = new Panelpolitica();
+        pol2 = new Panelpolitica();
         pol2.setComputador(computador2);
         pol2Host.add(pol2, BorderLayout.CENTER);
     }
@@ -233,6 +236,14 @@ public class main extends javax.swing.JFrame {
             Computador c = computadores.retornar(i);
             c.setRetrasoRed(config.latenciaRed);
             aplicarAComputador(c, config.computadores[i]);
+        }
+        //que cada panel muestre la politica que quedo
+        pol1.mostrarPolitica();
+        pol2.mostrarPolitica();
+        if (ventanasExtra != null) {
+            for (int i = 0; i < ventanasExtra.len(); i++) {
+                ventanasExtra.retornar(i).mostrarPolitica();
+            }
         }
         //primero los buffers, porque los productores y consumidores los necesitan
         crearBuffers(config);

@@ -80,6 +80,11 @@ public class VentanaComputador extends javax.swing.JFrame {
         reloj.start();
     }
 
+    //para que se vea la politica que le puso la configuracion
+    public void mostrarPolitica() {
+        politica.mostrarPolitica();
+    }
+
     //un clic en un proceso muestra su pcb, otro clic en el mismo vuelve a seguir la cpu
     private void conectarLista(int cual) {
         listas[cual].addListSelectionListener(e -> {

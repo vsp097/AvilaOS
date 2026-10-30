@@ -5,9 +5,12 @@
 package interfaz;
 
 import Data_Structures.Computador;
+import avilaos.EDF;
 import avilaos.FCFS;
 import avilaos.Planificador;
 import avilaos.PoliticaPlanificacion;
+import avilaos.Prioridades;
+import avilaos.Roundrobin;
 import avilaos.SelectorPolitica;
 
 /**
@@ -29,6 +32,25 @@ public class Panelpolitica extends javax.swing.JPanel {
         //para saber a que computador aplicarle la politica
     public void setComputador(Computador c) {
         computador = c;
+    }
+
+    //muestra la politica que tiene el computador ahora, por ejemplo despues de cargar la configuracion
+    public void mostrarPolitica() {
+        if (computador == null) {
+            return;
+        }
+        Planificador p = computador.getPlanificador();
+        String nombre = "FCFS";
+        if (p instanceof Roundrobin) {
+            nombre = "ROUND_ROBIN";
+            quantum.setText(String.valueOf(((Roundrobin) p).getQuantum()));
+        } else if (p instanceof Prioridades) {
+            nombre = "PRIORIDADES";
+        } else if (p instanceof EDF) {
+            nombre = "EDF";
+        }
+        Combo.setSelectedItem(nombre);
+        mensaje.setText(computador.getNombre() + " usa " + nombre);
     }
 
     /**
