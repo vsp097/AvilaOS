@@ -39,6 +39,14 @@ public class Metricas {
     private int[] inicioHistorial = new int[MAX_COMPUTADORES];
     private int[] cantidadHistorial = new int[MAX_COMPUTADORES];
 
+    //para las otras graficas: throughput, tasa de exito y tiempo de espera de todo el sistema
+    public static final int THROUGHPUT = 0;
+    public static final int EXITO = 1;
+    public static final int ESPERA = 2;
+    private double[][] historialSistema = new double[3][MAX_MUESTRAS];
+    private int inicioSistema = 0;
+    private int cantidadSistema = 0;
+
     //datos por buffer
     private long[] producidos = new long[MAX_BUFFERS];
     private long[] consumidos = new long[MAX_BUFFERS];
@@ -87,6 +95,10 @@ public class Metricas {
                 historial[c][pos] = u;
                 cicloEnVentana[c] = 0;
                 ocupadoEnVentana[c] = 0;
+                //el computador 1 siempre existe, asi que con el saco tambien el punto del sistema
+                if (c == 0) {
+                    guardarMuestraSistema();
+                }
             }
         } finally {
             mutex.release();
@@ -286,48 +298,63 @@ public class Metricas {
     public double getThroughputSistema() {
         mutex.acquireUninterruptibly();
         try {
-            long terminados = 0;
-            long ciclos = 0;
-            for (int i = 0; i < MAX_COMPUTADORES; i++) {
-                terminados += completados[i];
-                if (ciclosTotales[i] > ciclos) {
-                    ciclos = ciclosTotales[i];
-                }
-            }
-            return dividir(terminados, ciclos);
+            return throughputSistema();
         } finally {
             mutex.release();
         }
+    }
+
+    //sin el semaforo, para usarlo desde adentro cuando ya esta tomado
+    private double throughputSistema() {
+        long terminados = 0;
+        long ciclos = 0;
+        for (int i = 0; i < MAX_COMPUTADORES; i++) {
+            terminados += completados[i];
+            if (ciclosTotales[i] > ciclos) {
+                ciclos = ciclosTotales[i];
+            }
+        }
+        return dividir(terminados, ciclos);
     }
 
     public double getRespuestaPromedioSistema() {
         mutex.acquireUninterruptibly();
         try {
-            long suma = 0;
-            long cantidad = 0;
-            for (int i = 0; i < MAX_COMPUTADORES; i++) {
-                suma += sumaRespuesta[i];
-                cantidad += cantidadRespuesta[i];
-            }
-            return dividir(suma, cantidad);
+            return respuestaSistema();
         } finally {
             mutex.release();
         }
     }
 
+    //sin el semaforo, para usarlo desde adentro cuando ya esta tomado
+    private double respuestaSistema() {
+        long suma = 0;
+        long cantidad = 0;
+        for (int i = 0; i < MAX_COMPUTADORES; i++) {
+            suma += sumaRespuesta[i];
+            cantidad += cantidadRespuesta[i];
+        }
+        return dividir(suma, cantidad);
+    }
+
     public double getCumplimientoDeadlineSistema() {
         mutex.acquireUninterruptibly();
         try {
-            long cumplidos = 0;
-            long total = 0;
-            for (int i = 0; i < MAX_COMPUTADORES; i++) {
-                cumplidos += deadlineCumplidos[i];
-                total += deadlineTotales[i];
-            }
-            return dividir(cumplidos * 100.0, total);
+            return exitoSistema();
         } finally {
             mutex.release();
         }
+    }
+
+    //sin el semaforo, para usarlo desde adentro cuando ya esta tomado
+    private double exitoSistema() {
+        long cumplidos = 0;
+        long total = 0;
+        for (int i = 0; i < MAX_COMPUTADORES; i++) {
+            cumplidos += deadlineCumplidos[i];
+            total += deadlineTotales[i];
+        }
+        return dividir(cumplidos * 100.0, total);
     }
 
     public double getEquidadSistema() {
@@ -428,6 +455,45 @@ public class Metricas {
                 return 0;
             }
             return historial[c][(inicioHistorial[c] + i) % MAX_MUESTRAS];
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //guarda como van el throughput, la tasa de exito y la espera en este momento
+    //se llama con el mutex ya tomado
+    private void guardarMuestraSistema() {
+        int pos = (inicioSistema + cantidadSistema) % MAX_MUESTRAS;
+        if (cantidadSistema < MAX_MUESTRAS) {
+            cantidadSistema++;
+        } else {
+            inicioSistema = (inicioSistema + 1) % MAX_MUESTRAS;
+        }
+        historialSistema[THROUGHPUT][pos] = throughputSistema();
+        historialSistema[EXITO][pos] = exitoSistema();
+        historialSistema[ESPERA][pos] = respuestaSistema();
+    }
+
+    public int getCantidadMuestrasSistema() {
+        mutex.acquireUninterruptibly();
+        try {
+            return cantidadSistema;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //cual es THROUGHPUT, EXITO o ESPERA; i es el punto (0 es el mas viejo)
+    public double getMuestraSistema(int cual, int i) {
+        if (cual < 0 || cual > 2) {
+            return 0;
+        }
+        mutex.acquireUninterruptibly();
+        try {
+            if (i < 0 || i >= cantidadSistema) {
+                return 0;
+            }
+            return historialSistema[cual][(inicioSistema + i) % MAX_MUESTRAS];
         } finally {
             mutex.release();
         }
