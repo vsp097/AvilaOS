@@ -33,6 +33,8 @@ public class PCB {
     protected int deadline;
     protected float time;
     protected int prioridad;
+    //nombre del computador donde corre el proceso, no cambia porque no hay migracion
+    protected String computador = "";
     
     public PCB(int id, String n, int p, String t, float m){
     ID = id;
@@ -95,6 +97,14 @@ public class PCB {
         prioridad = p;
     }
     
+    public String getComputador() {
+        return computador;
+    }
+
+    public void setComputador(String c) {
+        computador = c;
+    }
+
     public void avanzarPC() {
         pc++;
     }

@@ -184,6 +184,7 @@ public class Computador implements ClockListener{
         tomar();
         try {
             p.setstate(EstadoProceso.Nuevo);
+            p.setComputador(nombre);
             p.setLlegada(ciclo);
             p.setTuvoDeadline(p.getdeadline() > 0);
             Nuevos.Encolar(p);
