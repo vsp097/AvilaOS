@@ -14,9 +14,11 @@ import avilaos.GlobalClock;
 import avilaos.LogEventos;
 import avilaos.PoliticaPlanificacion;
 import avilaos.SelectorPolitica;
+import avilaos.SolicitudProceso;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
@@ -36,6 +38,11 @@ public class main extends javax.swing.JFrame {
     private panelPCB pcbComputador2;
     private JTabbedPane pestanas;
      private Listas<PanelBuffer> panelesBuffer = null;
+    //los buffers creados, en el mismo orden en que los pide el formulario
+    private Listas<Buffer> buffers = null;
+    //el formulario de crear procesos y su ventana, se guardan para reusarlos
+    private FormularioProceso formulario;
+    private VistaProceso ventanaProceso;
     /**
      * Creates new form main
      */
@@ -98,6 +105,68 @@ public class main extends javax.swing.JFrame {
             panelesBuffer.insertar(nodo);
         }
         pestanas.addTab(b.getNombre(), new JScrollPane(pb));
+        //el buffer tambien se guarda para poder buscarlo por posicion
+        Nodo<Buffer> nodoBuffer = new Nodo<>(b);
+        if (buffers == null) {
+            buffers = new Listas<>(nodoBuffer);
+        } else {
+            buffers.insertar(nodoBuffer);
+        }
+        //si el formulario ya esta abierto le aparece el buffer nuevo
+        if (formulario != null) {
+            formulario.actualizarBuffers(nombresBuffers());
+        }
+    }
+
+    //devuelve el buffer que esta en esa posicion de la lista
+    private Buffer buscarBuffer(int indice) {
+        if (buffers == null || indice < 0 || indice >= buffers.len()) {
+            return null;
+        }
+        return buffers.retornar(indice);
+    }
+
+    //los nombres de los buffers que ya existen, para el combo del formulario
+    private String[] nombresBuffers() {
+        int total = buffers == null ? 0 : buffers.len();
+        String[] nombres = new String[total];
+        for (int i = 0; i < total; i++) {
+            nombres[i] = buffers.retornar(i).getNombre();
+        }
+        return nombres;
+    }
+
+    //abre el formulario de crear procesos en su propia ventana, una sola vez
+    private void abrirFormularioProceso() {
+        if (ventanaProceso == null) {
+            formulario = new FormularioProceso(2, nombresBuffers(), this::procesoCreado);
+            ventanaProceso = new VistaProceso(formulario);
+            ventanaProceso.setLocationRelativeTo(this);
+        }
+        ventanaProceso.setVisible(true);
+        ventanaProceso.toFront();
+    }
+
+    //aqui llega el proceso que armo el formulario y se mete en el computador que escogieron
+    private void procesoCreado(SolicitudProceso solicitud) {
+        PCB p = solicitud.getPcb();
+        String tipo = p.gettype();
+        if (tipo.equals("Productor") || tipo.equals("Consumidor")) {
+            Buffer b = buscarBuffer(solicitud.getBuffer());
+            if (b == null) {
+                JOptionPane.showMessageDialog(this, "Ese buffer ya no existe", "Dato invalido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            p.setBuffer(b);
+            p.setIndiceBuffer(solicitud.getBuffer());
+            p.setElementos(solicitud.getElementos());
+            p.setCadaCuantos(solicitud.getCadaCuantosCiclos());
+        } else {
+            //cpu bound e i/o bound terminan cuando se les acaban los ciclos
+            p.settime(solicitud.getCiclos());
+        }
+        Computador destino = solicitud.getComputador() == 2 ? computador2 : computador1;
+        destino.agregarProceso(p);
     }
 
     private static final PoliticaPlanificacion[] POLITICAS = {
@@ -495,10 +564,7 @@ public class main extends javax.swing.JFrame {
     }//GEN-LAST:event_vista2MouseClicked
 
     private void vista1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vista1MouseClicked
-        // TODO add your handling code here:
-        Procesoscreated v2 = new Procesoscreated(this, computador1, computador2);
-        v2.setVisible(true);
-        this.dispose();
+        abrirFormularioProceso();
     }//GEN-LAST:event_vista1MouseClicked
 
     private void jComboBox4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox4ActionPerformed
