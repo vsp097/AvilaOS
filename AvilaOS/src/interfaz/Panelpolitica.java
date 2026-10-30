@@ -48,7 +48,7 @@ public class Panelpolitica extends javax.swing.JPanel {
         aplicar = new javax.swing.JButton();
         mensaje = new javax.swing.JLabel();
 
-        jLabel1.setText("Politica:");
+        jLabel1.setText("Política:");
 
         Combo.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "FCFS", "ROUND_ROBIN", "PRIORIDADES", "EDF" }));
         Combo.addActionListener(new java.awt.event.ActionListener() {

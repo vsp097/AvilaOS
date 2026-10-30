@@ -10,7 +10,7 @@ package interfaz;
  */
 public class VentanaBuffers extends javax.swing.JFrame {
 
-    //el panel de crear buffers que va dentro de la ventana
+    //el panel que va dentro de la ventana
     private VistaBuffers panel;
 
     /**
@@ -25,7 +25,11 @@ public class VentanaBuffers extends javax.swing.JFrame {
         initComponents();
         panel = p;
         contenido.add(panel, java.awt.BorderLayout.CENTER);
+        //la ventana se ajusta a lo que ocupan los campos, con algo de holgura
         pack();
+        setMinimumSize(getSize());
+        setSize(getWidth() + 60, getHeight() + 12);
+        setLocationRelativeTo(null);
     }
 
     public VistaBuffers getPanel() {
@@ -44,9 +48,9 @@ public class VentanaBuffers extends javax.swing.JFrame {
         contenido = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("Buffers");
+        setTitle("ÁvilaOS — Crear buffer");
 
-        contenido.setBorder(javax.swing.BorderFactory.createTitledBorder("Crear buffer"));
+        contenido.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
         contenido.setLayout(new java.awt.BorderLayout());
         getContentPane().add(contenido, java.awt.BorderLayout.CENTER);
 

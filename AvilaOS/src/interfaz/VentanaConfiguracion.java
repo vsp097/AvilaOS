@@ -10,7 +10,7 @@ package interfaz;
  */
 public class VentanaConfiguracion extends javax.swing.JFrame {
 
-    //el panel de configuracion que va dentro de la ventana
+    //el panel que va dentro de la ventana
     private VistaConfiguracion panel;
 
     /**
@@ -25,7 +25,11 @@ public class VentanaConfiguracion extends javax.swing.JFrame {
         initComponents();
         panel = p;
         contenido.add(panel, java.awt.BorderLayout.CENTER);
+        //la ventana se ajusta a lo que ocupan los campos, con algo de holgura
         pack();
+        setMinimumSize(getSize());
+        setSize(getWidth() + 60, getHeight() + 12);
+        setLocationRelativeTo(null);
     }
 
     public VistaConfiguracion getPanel() {
@@ -44,9 +48,9 @@ public class VentanaConfiguracion extends javax.swing.JFrame {
         contenido = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("Configuracion");
+        setTitle("ÁvilaOS — Configuración");
 
-        contenido.setBorder(javax.swing.BorderFactory.createTitledBorder("Parametros de la simulacion"));
+        contenido.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
         contenido.setLayout(new java.awt.BorderLayout());
         getContentPane().add(contenido, java.awt.BorderLayout.CENTER);
 

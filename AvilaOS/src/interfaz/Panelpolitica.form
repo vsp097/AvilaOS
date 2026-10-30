@@ -72,7 +72,7 @@
       <SubComponents>
         <Component class="javax.swing.JLabel" name="jLabel1">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Politica:"/>
+            <Property name="text" type="java.lang.String" value="Política:"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JComboBox" name="Combo">
