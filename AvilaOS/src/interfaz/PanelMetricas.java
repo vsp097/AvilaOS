@@ -54,9 +54,10 @@ public class PanelMetricas extends javax.swing.JPanel {
         this.computadores = Math.max(1, Math.min(computadores, Metricas.MAX_COMPUTADORES));
         this.buffers = Math.max(0, Math.min(buffers, Metricas.MAX_BUFFERS));
                 removeAll();
-        setLayout(new BorderLayout(5, 5));
-        add(pnlTablas, BorderLayout.NORTH);
-        add(pnlGrafica, BorderLayout.CENTER);
+        //la tabla arriba y la grafica abajo, cada una con la mitad del alto
+        setLayout(new java.awt.GridLayout(2, 1, 8, 8));
+        add(new javax.swing.JScrollPane(pnlTablas));
+        add(pnlGrafica);
         armarTablas();
         armarGrafica();
         //refresco el panel cada segundo

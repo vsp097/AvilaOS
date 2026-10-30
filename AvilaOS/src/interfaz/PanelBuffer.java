@@ -131,61 +131,38 @@ public class PanelBuffer extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        cabecera = new javax.swing.JPanel();
         titulo = new javax.swing.JLabel();
         semaforos = new javax.swing.JLabel();
         fila = new javax.swing.JPanel();
         bloqueados = new javax.swing.JLabel();
 
-        titulo.setText("B1");
+        setMinimumSize(new java.awt.Dimension(280, 170));
+        setPreferredSize(new java.awt.Dimension(300, 170));
+        setLayout(new java.awt.BorderLayout());
 
-        semaforos.setText("vacio 0 · lleno 0 · mutex 1");
+        cabecera.setLayout(new java.awt.GridLayout(2, 1));
 
-        javax.swing.GroupLayout filaLayout = new javax.swing.GroupLayout(fila);
-        fila.setLayout(filaLayout);
-        filaLayout.setHorizontalGroup(
-            filaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
-        filaLayout.setVerticalGroup(
-            filaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
+        titulo.setFont(titulo.getFont().deriveFont(titulo.getFont().getStyle() | java.awt.Font.BOLD));
+        titulo.setText("Buffer");
+        cabecera.add(titulo);
 
-        bloqueados.setText("Bloqueados: ninguno");
+        semaforos.setText("vacio 0  ·  lleno 0  ·  mutex 0");
+        cabecera.add(semaforos);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(titulo)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
-                        .addComponent(semaforos))
-                    .addComponent(fila, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(bloqueados))
-                .addContainerGap())
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(titulo)
-                    .addComponent(semaforos))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(fila, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(bloqueados)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        add(cabecera, java.awt.BorderLayout.NORTH);
+
+        fila.setLayout(new java.awt.GridLayout(1, 1));
+        add(fila, java.awt.BorderLayout.CENTER);
+
+        bloqueados.setText("Sin procesos esperando");
+        add(bloqueados, java.awt.BorderLayout.SOUTH);
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel bloqueados;
+    private javax.swing.JPanel cabecera;
     private javax.swing.JPanel fila;
     private javax.swing.JLabel semaforos;
     private javax.swing.JLabel titulo;

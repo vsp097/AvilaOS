@@ -102,8 +102,10 @@ public class panelPCB extends javax.swing.JPanel {
         lblTiempo = new javax.swing.JLabel();
         lblMotivo = new javax.swing.JLabel();
 
-        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("PCB"));
-        jPanel1.setLayout(new java.awt.GridLayout(10, 1));
+        setLayout(new java.awt.BorderLayout());
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("En la CPU"));
+        jPanel1.setLayout(new java.awt.GridLayout(5, 2, 10, 0));
 
         lblId.setText("ID:");
         jPanel1.add(lblId);
@@ -135,16 +137,7 @@ public class panelPCB extends javax.swing.JPanel {
         lblMotivo.setText("Motivo:");
         jPanel1.add(lblMotivo);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 534, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 395, Short.MAX_VALUE)
-        );
+        add(jPanel1, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
 
