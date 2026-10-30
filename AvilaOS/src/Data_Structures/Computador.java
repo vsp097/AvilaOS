@@ -226,7 +226,6 @@ public class Computador implements ClockListener{
             ciclo = cycle;
             admitirInterno();
             revisarBloqueados();
-            revisarDeadlines();
             if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
                 expropiese();
             }
@@ -238,12 +237,14 @@ public class Computador implements ClockListener{
                 if (metricas != null) {
                     metricas.registrarCiclo(indice, false);
                 }
-                return;
+            } else {
+                if (metricas != null) {
+                    metricas.registrarCiclo(indice, true);
+                }
+                ejecutar();
             }
-            if (metricas != null) {
-                metricas.registrarCiclo(indice, true);
-            }
-            ejecutar();
+            //el deadline se baja al final del ciclo, asi el proceso si aprovecha el ultimo ciclo que le queda
+            revisarDeadlines();
         } finally {
             soltar();
         }
