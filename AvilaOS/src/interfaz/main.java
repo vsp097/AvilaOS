@@ -10,9 +10,12 @@ import Data_Structures.Listas;
 import Data_Structures.Nodo;
 import Data_Structures.PCB;
 import avilaos.Buffer;
+import avilaos.Configuracion;
 import avilaos.GlobalClock;
 import avilaos.LogEventos;
 import avilaos.Metricas;
+import avilaos.PoliticaPlanificacion;
+import avilaos.SelectorPolitica;
 import avilaos.SolicitudProceso;
 import avilaos.Validaciones;
 import java.awt.BorderLayout;
@@ -45,6 +48,14 @@ public class main extends javax.swing.JFrame {
     //el panel de crear buffers y su ventana
     private VistaBuffers panelBuffers;
     private VentanaBuffers ventanaBuffers;
+    //los procesos que se ven en cada una de las 8 listas, en el mismo orden que la lista
+    private PCB[][] enLista = new PCB[8][];
+    //el proceso que el usuario escogio con un clic; si no hay, se sigue al de la CPU
+    private PCB seleccionado1;
+    private PCB seleccionado2;
+    //el panel de configuracion y su ventana
+    private VistaConfiguracion panelConfiguracion;
+    private VentanaConfiguracion ventanaConfiguracion;
     //unas solas metricas para los dos computadores y para el panel
     private Metricas metricas = new Metricas();
     private PanelMetricas panelMetricas;
@@ -69,6 +80,18 @@ public class main extends javax.swing.JFrame {
         log = new LogEventos();
         c.setLog(log);
         c2.setLog(log);
+        //al hacer clic en una cola se puede ver el PCB de ese proceso
+        for (int i = 0; i < enLista.length; i++) {
+            enLista[i] = new PCB[0];
+        }
+        conectarLista(jList2, 0, 1);
+        conectarLista(jList3, 1, 1);
+        conectarLista(jList5, 2, 1);
+        conectarLista(jList6, 3, 1);
+        conectarLista(jList4, 4, 2);
+        conectarLista(jList1, 5, 2);
+        conectarLista(jList7, 6, 2);
+        conectarLista(jList8, 7, 2);
         computador1.setNombre("Computador 1");
         computador2.setNombre("Computador 2");
         //los dos reportan a la misma Metricas, cada uno con su numero
@@ -148,6 +171,35 @@ public class main extends javax.swing.JFrame {
         return nombres;
     }
 
+    //abre la configuracion en su propia ventana, una sola vez
+    private void abrirConfiguracion() {
+        if (ventanaConfiguracion == null) {
+            panelConfiguracion = new VistaConfiguracion(this::aplicarConfiguracion);
+            ventanaConfiguracion = new VentanaConfiguracion(panelConfiguracion);
+            ventanaConfiguracion.setLocationRelativeTo(this);
+        }
+        ventanaConfiguracion.setVisible(true);
+        ventanaConfiguracion.toFront();
+    }
+
+    //la configuracion ya viene validada, aqui solo se reparte a quien le toca
+    private void aplicarConfiguracion(Configuracion config) {
+        gC.setcduration(config.duracionCicloMs);
+        computador1.setRetrasoRed(config.latenciaRed);
+        computador2.setRetrasoRed(config.latenciaRed);
+        //validar() garantiza que hay por lo menos dos computadores
+        aplicarAComputador(computador1, config.computadores[0]);
+        aplicarAComputador(computador2, config.computadores[1]);
+        JOptionPane.showMessageDialog(this, "Configuracion aplicada");
+    }
+
+    //la ram, la politica y el quantum de un computador
+    private void aplicarAComputador(Computador c, Configuracion.ConfigComputador datos) {
+        c.setRAMt(datos.ram);
+        PoliticaPlanificacion politica = PoliticaPlanificacion.valueOf(datos.politica);
+        c.setPlanificador(SelectorPolitica.crear(politica, datos.quantum));
+    }
+
     //abre el panel de crear buffers en su propia ventana, una sola vez
     private void abrirVistaBuffers() {
         if (ventanaBuffers == null) {
@@ -211,6 +263,8 @@ public class main extends javax.swing.JFrame {
         final Listas<String> listos2;
         final Listas<String> bloqueados2;
         final Listas<String> terminados2;
+        //los mismos procesos, para poder mostrar su PCB si el usuario hace clic
+        final PCB[][] copia = new PCB[8][];
         //mismo semaforo que usan onTick(), admitir() y agregarProceso(),
         //para que nadie encole a mitad de la copia
         computador1.tomar();
@@ -219,6 +273,10 @@ public class main extends javax.swing.JFrame {
             listos1 = aListas(computador1.getListos());
             bloqueados1 = aListasMotivo(computador1.getBloqueados());
             terminados1 = aListas(computador1.getTerminados());
+            copia[0] = aArreglo(computador1.getNuevos());
+            copia[1] = aArreglo(computador1.getListos());
+            copia[2] = aArreglo(computador1.getBloqueados());
+            copia[3] = aArreglo(computador1.getTerminados());
         } finally {
             computador1.soltar();
         }
@@ -228,10 +286,15 @@ public class main extends javax.swing.JFrame {
             listos2 = aListas(computador2.getListos());
             bloqueados2 = aListasMotivo(computador2.getBloqueados());
             terminados2 = aListas(computador2.getTerminados());
+            copia[4] = aArreglo(computador2.getNuevos());
+            copia[5] = aArreglo(computador2.getListos());
+            copia[6] = aArreglo(computador2.getBloqueados());
+            copia[7] = aArreglo(computador2.getTerminados());
         } finally {
             computador2.soltar();
         }
         SwingUtilities.invokeLater(() -> {
+            enLista = copia;
             clock.setText(String.valueOf(cycle));
             //las 4 colas del computador 1
             mostrar(jList2, nuevos1);
@@ -250,14 +313,56 @@ public class main extends javax.swing.JFrame {
             modo2.setText("Modo: " + computador2.getmode());
             //paneles: se actualizan en cada ciclo
             panelLog.actualizar();
-            pcbComputador1.mostrar(computador1.getEnEjecucion());
-            pcbComputador2.mostrar(computador2.getEnEjecucion());
+            pcbComputador1.mostrar(seleccionado1 != null ? seleccionado1 : computador1.getEnEjecucion());
+            pcbComputador2.mostrar(seleccionado2 != null ? seleccionado2 : computador2.getEnEjecucion());
             if (panelesBuffer != null) {
                 for (int i = 0; i < panelesBuffer.len(); i++) {
                     panelesBuffer.retornar(i).actualizar();
                 }
             }
         });
+    }
+
+    //un clic en la lista muestra el PCB de ese proceso; otro clic en el mismo vuelve a seguir la CPU
+    private void conectarLista(javax.swing.JList<String> jl, int cual, int computador) {
+        jl.addListSelectionListener(e -> {
+            if (e.getValueIsAdjusting()) {
+                return;
+            }
+            int i = jl.getSelectedIndex();
+            //el refresco de cada ciclo borra la seleccion, y eso no es un clic del usuario
+            if (i < 0 || i >= enLista[cual].length) {
+                return;
+            }
+            PCB p = enLista[cual][i];
+            if (computador == 1) {
+                seleccionado1 = p == seleccionado1 ? null : p;
+            } else {
+                seleccionado2 = p == seleccionado2 ? null : p;
+            }
+        });
+    }
+
+    //copia los procesos de una cola a un arreglo, sin cambiarle el orden a la cola
+    static PCB[] aArreglo(Cola<PCB> cola) {
+        Cola<PCB> temporal = new Cola<>();
+        int cuantos = 0;
+        PCB p = cola.Desencolar();
+        while (p != null) {
+            temporal.Encolar(p);
+            cuantos++;
+            p = cola.Desencolar();
+        }
+        PCB[] arreglo = new PCB[cuantos];
+        int i = 0;
+        p = temporal.Desencolar();
+        while (p != null) {
+            arreglo[i] = p;
+            i++;
+            cola.Encolar(p);
+            p = temporal.Desencolar();
+        }
+        return arreglo;
     }
 
     //la ram total, la que esta usada y la que queda libre
@@ -386,6 +491,7 @@ public class main extends javax.swing.JFrame {
         jMenuBar1 = new javax.swing.JMenuBar();
         vista1 = new javax.swing.JMenu();
         vista2 = new javax.swing.JMenu();
+        configuracion = new javax.swing.JMenu();
 
         jScrollPane5.setViewportView(jEditorPane1);
 
@@ -712,10 +818,22 @@ public class main extends javax.swing.JFrame {
         });
         jMenuBar1.add(vista2);
 
+        configuracion.setText("configuracion");
+        configuracion.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                configuracionMouseClicked(evt);
+            }
+        });
+        jMenuBar1.add(configuracion);
+
         setJMenuBar(jMenuBar1);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void configuracionMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_configuracionMouseClicked
+        abrirConfiguracion();
+    }//GEN-LAST:event_configuracionMouseClicked
 
     private void vista2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_vista2MouseClicked
         abrirVistaBuffers();
@@ -790,5 +908,6 @@ public class main extends javax.swing.JFrame {
     private javax.swing.JSeparator jSeparator8;
     private javax.swing.JMenu vista1;
     private javax.swing.JMenu vista2;
+    private javax.swing.JMenu configuracion;
     // End of variables declaration//GEN-END:variables
 }

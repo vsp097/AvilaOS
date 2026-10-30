@@ -261,6 +261,10 @@ public class Computador implements ClockListener{
                 }
             }
             if (p.getstate() == EstadoProceso.Listo) {
+                //si lo que esperaba era un semaforo del buffer, se anota el tiempo
+                if (metricas != null && p.getMotivo().startsWith("semaforo")) {
+                    metricas.registrarBloqueo(p.getIndiceBuffer(), ciclo - p.getCicloBloqueo());
+                }
                 Listos.Encolar(p);
             } else {
                 siguen.Encolar(p);
@@ -344,6 +348,14 @@ public class Computador implements ClockListener{
             seBloqueo = b.pasitoConsumidor(paso, p);
         }
         p.setPaso(paso + 1);
+        //en el paso 2 es cuando de verdad se mete o se saca un elemento del buffer
+        if (paso == 2 && metricas != null) {
+            if (p.gettype().equals("Productor")) {
+                metricas.registrarProducido(p.getIndiceBuffer());
+            } else {
+                metricas.registrarConsumido(p.getIndiceBuffer());
+            }
+        }
         //si ya hizo los 5 paso termino un elemento
         if (p.getPaso() == 5) {
             p.setPaso(0);
@@ -367,6 +379,8 @@ public class Computador implements ClockListener{
         }
         if (seBloqueo) {
             p.setstate(EstadoProceso.Bloqueado);
+            //se guarda el ciclo para saber despues cuanto estuvo esperando
+            p.setCicloBloqueo(ciclo);
             Bloqueados.Encolar(p);
             String sem = "mutex";
             if (paso == 0 && p.gettype().equals("Productor")) {
