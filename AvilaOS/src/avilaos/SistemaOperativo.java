@@ -134,6 +134,8 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
             }
             computador.agregarProceso(p);
         }
+        //el disco espera a que lleguen todas las solicitudes de la carga para que la politica las ordene juntas
+        disco.retener(deES);
     }
 
     //----- el reloj -----
@@ -354,6 +356,10 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
 
     @Override
     public void cpuOciosa() {
+        //ya no va a llegar ninguna solicitud mas de la carga inicial
+        if (disco.getRetenidas() > 0) {
+            disco.liberarRetencion();
+        }
     }
 
     //----- lo que avisa el disco cuando termina una solicitud -----
