@@ -4,9 +4,7 @@
  */
 package avilaos;
 
-import Data_Structures.Computador;
 import Data_Structures.Listas;
-import Data_Structures.Nodo;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -20,18 +18,13 @@ public class GlobalClock extends Thread{
     private volatile boolean paused = false;
     private final Object pauseLock = new Object();
     
-    private Listas Clocklist;
-    //semaforo de java para que la ventana no agregue un computador mientras el reloj recorre la lista
+    //los componentes que trabajan con el reloj: el computador y el disco
+    private Listas<ClockListener> Clocklist = new Listas<>();
+    //semaforo de java para que nadie agregue un componente mientras el reloj recorre la lista
     private final Semaphore llaveLista = new Semaphore(1);
     private volatile ClockListener listener;
-    //vycky aqui crea el semaforo
-    
    public void setClockListener(ClockListener l) {
         this.listener = l;
-    }
-
-    public void setClocklist(Listas l) {   // si no tenías forma de asignarla
-        this.Clocklist = l;
     }
 
     @Override
@@ -52,11 +45,9 @@ public class GlobalClock extends Thread{
 
             llaveLista.acquireUninterruptibly();
             try {
-                if (Clocklist != null) {
-                    for (int i = 0; i < Clocklist.len(); i++) {
-                        Computador c = (Computador) Clocklist.retornar(i);
-                        c.onTick(cycle);
-                    }
+                //cada componente avanza exactamente un ciclo de trabajo
+                for (int i = 0; i < Clocklist.len(); i++) {
+                    Clocklist.retornar(i).onTick(cycle);
                 }
             } finally {
                 llaveLista.release();
@@ -76,11 +67,11 @@ public class GlobalClock extends Thread{
         }
     }
     
-    //agrega un computador mas al reloj, por ejemplo cuando la configuracion pide 3 o mas
-    public void agregarComputador(Computador c) {
+    //agrega un componente al reloj, se llaman en el mismo orden en que se agregaron
+    public void agregar(ClockListener c) {
         llaveLista.acquireUninterruptibly();
         try {
-            Clocklist.insertar(new Nodo<Computador>(c));
+            Clocklist.agregar(c);
         } finally {
             llaveLista.release();
         }
@@ -109,6 +100,10 @@ public class GlobalClock extends Thread{
 
     public boolean isPaused() {
         return paused;
+    }
+
+    public long getcduration() {
+        return cycleDuration;
     }
 
     public void setcduration(long ms) {
