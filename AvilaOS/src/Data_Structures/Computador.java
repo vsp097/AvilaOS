@@ -3,12 +3,12 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package Data_Structures;
-import avilaos.Buffer;
 import avilaos.ClockListener;
 import avilaos.FCFS;
 import avilaos.Planificador;
 import avilaos.LogEventos;
 import avilaos.Metricas;
+import avilaos.ServicioES;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -25,15 +25,21 @@ public class Computador implements ClockListener{
     protected Cola<PCB> Listos = new Cola<>();
     protected Cola<PCB> Bloqueados = new Cola<>();
     protected Cola<PCB> Terminados = new Cola<>();
+    //las dos colas de procesos suspendidos (estan en el area de intercambio del disco)
+    protected Cola<PCB> ListosSuspendidos = new Cola<>();
+    protected Cola<PCB> BloqueadosSuspendidos = new Cola<>();
     protected PCB enEjecucion;
     protected ModoCPU modo = ModoCPU.Usuario;
     protected String nombre = "Computador";
     protected LogEventos log;
     protected int ciclosUsados = 0;
     protected long ciclo = 0;
-    //cada cuanto pide e/s y cuanto dura
-    protected int cadaES = 3;
-    protected int duracionES = 2;
+    //el sistema operativo, que es quien arma las solicitudes para el disco
+    protected ServicioES servicioES;
+
+    public void setServicioES(ServicioES s) {
+        servicioES = s;
+    }
 
         //las metricas del sistema (una sola para todos) y el numero de este computador (0 es el primero)
     protected Metricas metricas;
@@ -44,15 +50,6 @@ public class Computador implements ClockListener{
         indice = i;
     }
 
-    //ciclos que tarda la red
-    protected int retrasoRed = 2;
-
-    public void setRetrasoRed(int r) {
-        retrasoRed = r;
-
-    }
-    
-    
     public Computador(){
         CPU = null;
         RAM = 0;
@@ -171,6 +168,41 @@ public class Computador implements ClockListener{
         return Terminados;
     }
 
+    public Cola<PCB> getListosSuspendidos() {
+        return ListosSuspendidos;
+    }
+
+    public Cola<PCB> getBloqueadosSuspendidos() {
+        return BloqueadosSuspendidos;
+    }
+
+    //copia de todas las colas para que la ventana las muestre, una por cada estado
+    //va en el mismo orden que el enum EstadoProceso
+    public PCB[][] copiarColas() {
+        tomar();
+        try {
+            PCB[][] copia = new PCB[EstadoProceso.values().length][];
+            copia[EstadoProceso.Nuevo.ordinal()] = copiar(Nuevos);
+            copia[EstadoProceso.Listo.ordinal()] = copiar(Listos);
+            copia[EstadoProceso.Ejecucion.ordinal()] = enEjecucion == null ? new PCB[0] : new PCB[]{enEjecucion};
+            copia[EstadoProceso.Bloqueado.ordinal()] = copiar(Bloqueados);
+            copia[EstadoProceso.ListoSuspendido.ordinal()] = copiar(ListosSuspendidos);
+            copia[EstadoProceso.BloqueadoSuspendido.ordinal()] = copiar(BloqueadosSuspendidos);
+            copia[EstadoProceso.Terminado.ordinal()] = copiar(Terminados);
+            return copia;
+        } finally {
+            soltar();
+        }
+    }
+
+    private PCB[] copiar(Cola<PCB> cola) {
+        PCB[] arreglo = new PCB[cola.len()];
+        for (int i = 0; i < arreglo.length; i++) {
+            arreglo[i] = cola.ver(i);
+        }
+        return arreglo;
+    }
+
     //el PC que se muestra en la ventana es el del proceso que esta en la CPU
     public int getPC() {
         if (enEjecucion == null) {
@@ -221,11 +253,11 @@ public class Computador implements ClockListener{
        //lo que hace el computador en cada ciclo del reloj
     @Override
     public void onTick(long cycle) {
+        boolean ocioso;
         tomar();
         try {
             ciclo = cycle;
             admitirInterno();
-            revisarBloqueados();
             if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
                 expropiese();
             }
@@ -245,37 +277,52 @@ public class Computador implements ClockListener{
             }
             //el deadline se baja al final del ciclo, asi el proceso si aprovecha el ultimo ciclo que le queda
             revisarDeadlines();
+            ocioso = enEjecucion == null && Listos.estaVacia();
+        } finally {
+            soltar();
+        }
+        //se avisa ya sin el candado, para no tener dos semaforos tomados a la vez
+        if (ocioso && servicioES != null) {
+            servicioES.cpuOciosa();
+        }
+    }
+ 
+    //el disco termino la solicitud de este proceso: sale de bloqueados y vuelve a listos
+    public void despertar(PCB p) {
+        tomar();
+        try {
+            if (!Bloqueados.eliminar(p)) {
+                return;
+            }
+            p.setMotivo(MotivoBloqueo.NINGUNO);
+            registrar("Proceso " + p.getname() + " termina su E/S (" + p.textoOperacion() + ")");
+            if (p.getTuvoDeadline() && p.getdeadline() == 0) {
+                terminar(p, "se le acabo el deadline");
+            } else if (p.getime() <= 0) {
+                terminar(p, "termino sus instruciones");
+            } else {
+                p.setstate(EstadoProceso.Listo);
+                Listos.Encolar(p);
+            }
         } finally {
             soltar();
         }
     }
- 
-    //revisa los bloqueados o sea los que despertaron por un semaforo o terminaron su e/s
-    private void revisarBloqueados() {
-        Cola<PCB> siguen = new Cola<>();
-        PCB p = Bloqueados.Desencolar();
-        while (p != null) {
-            if (p.getEspera() > 0) {
-                p.setEspera(p.getEspera() - 1);
-                if (p.getEspera() == 0) {
-                    p.setstate(EstadoProceso.Listo);
-                    registrar("Proceso " + p.getname() + " termina su E/S");
-                }
+
+    //la solicitud no se pudo completar (por ejemplo el archivo ya no existia): el proceso termina con error
+    public void fallar(PCB p, String motivo) {
+        tomar();
+        try {
+            if (!Bloqueados.eliminar(p)) {
+                return;
             }
-            if (p.getstate() == EstadoProceso.Listo) {
-                //si lo que esperaba era un semaforo del buffer, se anota el tiempo
-                if (metricas != null && p.getMotivo().startsWith("semaforo")) {
-                    metricas.registrarBloqueo(p.getIndiceBuffer(), ciclo - p.getCicloBloqueo());
-                }
-                Listos.Encolar(p);
-            } else {
-                siguen.Encolar(p);
-            }
-            p = Bloqueados.Desencolar();
+            p.setMotivo(MotivoBloqueo.NINGUNO);
+            terminar(p, "fallo su E/S: " + motivo);
+        } finally {
+            soltar();
         }
-        moverTodos(siguen, Bloqueados);
     }
- 
+
     //cambio de proces para el que estaba en la CPU vuelve a listos 
     private void expropiese() {
         modo = ModoCPU.SO;
@@ -309,9 +356,23 @@ public class Computador implements ClockListener{
         ciclosUsados++;
                 p.sumarCicloCPU();
         p.avanzarPC();
-        String tipo = p.gettype();
-        if (tipo.equals("Productor") || tipo.equals("Consumidor")) {
-            ejecutarBuffer(p);
+        //lo primero que hace un proceso de E/S es pedirle su operacion al disco
+        //esa instruccion se ejecuta en modo sistema operativo
+        if (p.gettype() == TipoProceso.ES && !p.getSolicitudHecha()) {
+            modo = ModoCPU.SO;
+            p.setSolicitudHecha(true);
+            p.settime(p.getime() - 1);
+            String error = servicioES == null ? "no hay disco" : servicioES.solicitar(p, ciclo);
+            if (error != null) {
+                terminar(p, "fallo su E/S: " + error);
+            } else {
+                p.setMotivo(MotivoBloqueo.ES_DISCO);
+                p.setstate(EstadoProceso.Bloqueado);
+                p.setCicloBloqueo(ciclo);
+                Bloqueados.Encolar(p);
+                registrar("Proceso " + p.getname() + " pide " + p.textoOperacion() + " y se bloquea por E/S");
+            }
+            enEjecucion = null;
             return;
         }
         modo = ModoCPU.Usuario;
@@ -319,95 +380,15 @@ public class Computador implements ClockListener{
         if (p.getime() <= 0) {
             terminar(p, "termino sus instruciones");
             enEjecucion = null;
-            return;
-        }
-        if (tipo.equals("I/O Bound") && p.getpc() % cadaES == 0) {
-            p.setEspera(duracionES);
-            p.setMotivo("E/S");
-            p.setstate(EstadoProceso.Bloqueado);
-            Bloqueados.Encolar(p);
-            registrar("Proceso " + p.getname() + " pide E/S y se bloquea");
-            enEjecucion = null;
         }
     }
- 
-    //un paso del productor o consumidor
-    private void ejecutarBuffer(PCB p) {
-        Buffer b = p.getBuffer();
-        //espera sus ciclos antes de producir o modo usuario
-        if (p.getPaso() == 0 && p.getContador() < p.getCadaCuantos() - 1) {
-            modo = ModoCPU.Usuario;
-            p.setContador(p.getContador() + 1);
-            return;
-        }
-        //los pasos del buffer son en modo SO
-        modo = ModoCPU.SO;
-        int paso = p.getPaso();
-        boolean seBloqueo;
-        if (p.gettype().equals("Productor")) {
-            seBloqueo = b.pasitoProductor(paso, p, p.getId());
-        } else {
-            seBloqueo = b.pasitoConsumidor(paso, p);
-        }
-        p.setPaso(paso + 1);
-        //en el paso 2 es cuando de verdad se mete o se saca un elemento del buffer
-        if (paso == 2 && metricas != null) {
-            if (p.gettype().equals("Productor")) {
-                metricas.registrarProducido(p.getIndiceBuffer());
-            } else {
-                metricas.registrarConsumido(p.getIndiceBuffer());
-            }
-        }
-        //si ya hizo los 5 paso termino un elemento
-        if (p.getPaso() == 5) {
-            p.setPaso(0);
-            p.setContador(0);
-            p.setElementos(p.getElementos() - 1);
-            if (p.getElementos() <= 0) {
-                terminar(p, "termino sus elementos");
-                enEjecucion = null;
-                return;
-            }
-        }
-                //si el buffer esta en otro computador espera la red
-        if (paso == 2 && b.estaLejos(this) && retrasoRed > 0) {
-            p.setEspera(retrasoRed);
-            p.setMotivo("red (buffer " + b.getNombre() + ")");
-            p.setstate(EstadoProceso.Bloqueado);
-            Bloqueados.Encolar(p);
-            registrar("Proceso " + p.getname() + " accede al buffer " + b.getNombre() + " de forma remota");
-            enEjecucion = null;
-            return;
-        }
-        if (seBloqueo) {
-            p.setstate(EstadoProceso.Bloqueado);
-            //se guarda el ciclo para saber despues cuanto estuvo esperando
-            p.setCicloBloqueo(ciclo);
-            Bloqueados.Encolar(p);
-            String sem = "mutex";
-            if (paso == 0 && p.gettype().equals("Productor")) {
-                sem = "vacio";
-            } else if (paso == 0) {
-                sem = "lleno";
-            }
-            p.setMotivo("semaforo " + sem + " (buffer " + b.getNombre() + ")");
-            registrar("Proceso " + p.getname() + " se bloquea en el semaforo '" + sem + "' del buffer " + b.getNombre());
-            enEjecucion = null;
-        }
-    }
- 
+
        //el proceso pasa a terminados y libera su ram
     private void terminar(PCB p, String motivo) {
         p.setstate(EstadoProceso.Terminado);
         Terminados.Encolar(p);
         RAM += p.getmem();
         registrar("Proceso " + p.getname() + " termina: " + motivo);
-        //si era productor o consumidor y se quedo a mitad de un elemento, suelta sus semaforos
-        if (p.getBuffer() != null && p.getPaso() != 0) {
-            p.getBuffer().soltarSemaforos(p);
-            p.setPaso(0);
-            registrar("Proceso " + p.getname() + " suelta los semaforos del buffer " + p.getBuffer().getNombre());
-        }
         //si tenia deadline y llego a 0, se le acabo el tiempo y no cuenta como completado
         boolean vencio = p.getTuvoDeadline() && p.getdeadline() == 0;
         if (metricas != null) {
@@ -439,18 +420,11 @@ public class Computador implements ClockListener{
         }
         moverTodos(siguen, Listos);
 
-        //de los bloqueados solo reviso los que estan en E/S
-        siguen = new Cola<>();
-        p = Bloqueados.Desencolar();
-        while (p != null) {
-            if (p.getEspera() > 0 && bajarDeadline(p)) {
-                terminar(p, "se le acabo el deadline");
-            } else {
-                siguen.Encolar(p);
-            }
-            p = Bloqueados.Desencolar();
+        //a los bloqueados tambien les corre el deadline, pero no se sacan a mitad de su E/S:
+        //si se les acaba, terminan cuando el disco los despierta
+        for (int i = 0; i < Bloqueados.len(); i++) {
+            bajarDeadline(Bloqueados.ver(i));
         }
-        moverTodos(siguen, Bloqueados);
     }
 
     //le baja 1 al deadline y dice si llego a 0, si no tenia deadline (0) no hace nada
