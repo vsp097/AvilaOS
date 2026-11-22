@@ -12,6 +12,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -21,56 +22,62 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
+ * Panel de métricas, incluida la pestaña del cabezal (parte de Diego, guía 3
+ * del HTML de ventanas).
+ *
+ * Esta rama no tiene todavía el backend de disco/suspensión que aparece en las
+ * capturas, así que el cuadro y las pestañas se dejan listos para recibir los
+ * datos mediante setters públicos.
  *
  * @author vyckh
  */
 public class PanelMetricas extends javax.swing.JPanel {
 
-    /**
-     * Creates new form PanelMetricas
-     */
-        private Metricas metricas;
+    private static final int THROUGHPUT = 0;
+    private static final int EXITO = 1;
+    private static final int ESPERA = 2;
+
+    private Metricas metricas;
     private int computadores;
     private int buffers;
 
-    //una linea de la grafica por cada computador
+    // una línea de la gráfica por cada computador
     private XYSeries[] series;
-    //celdas de la tabla de computadores: una fila por computador y una ultima para el sistema
+    // una línea por cada gráfica del sistema: throughput, éxito y espera
+    private XYSeries[] seriesSistema = new XYSeries[3];
+    // celdas de la tabla de computadores: una fila por computador y una última para el sistema
     private JLabel[][] celdas;
-    //celdas de la tabla de buffers
+    // celdas de la tabla de buffers
     private JLabel[][] celdasBuffer;
-    //cada cuanto se refresca el panel
+    // cada cuánto se refresca el panel
     private Timer timer;
 
-    //constructor vacio por si otra ventana ya lo usa
+    /**
+     * Creates new form PanelMetricas
+     */
     public PanelMetricas() {
         this(new Metricas(), 2, 0);
     }
 
-    //recibe las metricas del sistema, cuantos computadores hay y cuantos buffers
+    /**
+     * Recibe las métricas del sistema, cuántos computadores hay y cuántos buffers.
+     */
     public PanelMetricas(Metricas metricas, int computadores, int buffers) {
         initComponents();
         this.metricas = metricas;
         this.computadores = Math.max(1, Math.min(computadores, Metricas.MAX_COMPUTADORES));
         this.buffers = Math.max(0, Math.min(buffers, Metricas.MAX_BUFFERS));
-                removeAll();
-        //la tabla arriba y la grafica abajo, cada una con la mitad del alto
-        setLayout(new java.awt.GridLayout(2, 1, 8, 8));
-        add(new javax.swing.JScrollPane(pnlTablas));
-        add(pnlGrafica);
         armarTablas();
         armarGrafica();
-        //refresco el panel cada segundo
         timer = new Timer(1000, e -> actualizar());
         timer.start();
         actualizar();
     }
 
-    //arma las tablas de numeros dentro de pnlTablas
     private void armarTablas() {
         pnlTablas.setLayout(new BoxLayout(pnlTablas, BoxLayout.Y_AXIS));
 
-        String[] titulos = {"", "Utilizacion", "Throughput", "Respuesta prom.", "Deadlines", "Equidad"};
+        String[] titulos = {"", "Utilización", "Throughput", "Respuesta prom.", "Deadlines", "Equidad"};
         String[] nombres = new String[computadores + 1];
         for (int i = 0; i < computadores; i++) {
             nombres[i] = "Computador " + (i + 1);
@@ -92,7 +99,7 @@ public class PanelMetricas extends javax.swing.JPanel {
         }
     }
 
-    //arma la grafica con todas las cpu en el mismo grafico dentro de pnlGrafica
+    // primera pestaña con todas las CPU juntas; las demás son del sistema completo
     private void armarGrafica() {
         XYSeriesCollection datos = new XYSeriesCollection();
         series = new XYSeries[computadores];
@@ -101,15 +108,27 @@ public class PanelMetricas extends javax.swing.JPanel {
             datos.addSeries(series[i]);
         }
         JFreeChart grafica = ChartFactory.createXYLineChart(
-                "Utilizacion de la CPU", "Ciclo", "Utilizacion (%)",
+                "Utilización de la CPU", "Ciclo", "Utilización (%)",
                 datos, PlotOrientation.VERTICAL, true, true, false);
-        //la utilizacion siempre va de 0 a 100
         grafica.getXYPlot().getRangeAxis().setRange(0, 100);
-        pnlGrafica.setLayout(new BorderLayout());
-        pnlGrafica.add(new ChartPanel(grafica), BorderLayout.CENTER);
+        tabUtilizacion.add(new ChartPanel(grafica), BorderLayout.CENTER);
+
+        tabThroughput.add(graficaSistema(THROUGHPUT, "Throughput del sistema", "Procesos por ciclo"), BorderLayout.CENTER);
+        tabExito.add(graficaSistema(EXITO, "Deadlines cumplidos", "Cumplidos (%)"), BorderLayout.CENTER);
+        tabEspera.add(graficaSistema(ESPERA, "Tiempo de espera promedio", "Ciclos"), BorderLayout.CENTER);
     }
 
-    //arma una tabla con una fila de titulos y una fila por cada nombre
+    private ChartPanel graficaSistema(int cual, String titulo, String eje) {
+        seriesSistema[cual] = new XYSeries("Sistema");
+        XYSeriesCollection datos = new XYSeriesCollection(seriesSistema[cual]);
+        JFreeChart grafica = ChartFactory.createXYLineChart(
+                titulo, "Ciclo", eje, datos, PlotOrientation.VERTICAL, false, true, false);
+        if (cual == EXITO) {
+            grafica.getXYPlot().getRangeAxis().setRange(0, 100);
+        }
+        return new ChartPanel(grafica);
+    }
+
     private JPanel crearTabla(String[] titulos, String[] nombres, JLabel[][] destino) {
         JPanel p = new JPanel(new GridLayout(nombres.length + 1, titulos.length, 5, 3));
         for (int j = 0; j < titulos.length; j++) {
@@ -125,7 +144,6 @@ public class PanelMetricas extends javax.swing.JPanel {
         return p;
     }
 
-    //lee las metricas y actualiza los numeros y la grafica
     private void actualizar() {
         for (int c = 0; c < computadores; c++) {
             celdas[c][0].setText(String.format("%.1f%%", metricas.getUtilizacion(c)));
@@ -134,7 +152,6 @@ public class PanelMetricas extends javax.swing.JPanel {
             celdas[c][3].setText(String.format("%.1f%%", metricas.getCumplimientoDeadline(c)));
             celdas[c][4].setText(String.format("%.2f", metricas.getEquidad(c)));
         }
-        //la ultima fila es todo el sistema junto
         int s = computadores;
         celdas[s][0].setText(String.format("%.1f%%", metricas.getUtilizacionSistema()));
         celdas[s][1].setText(String.format("%.3f", metricas.getThroughputSistema()));
@@ -148,7 +165,6 @@ public class PanelMetricas extends javax.swing.JPanel {
             celdasBuffer[b][2].setText(String.format("%.1f", metricas.getBloqueoPromedio(b)));
         }
 
-        //vuelvo a llenar cada linea de la grafica con las muestras guardadas
         int ciclosPorMuestra = metricas.getCiclosPorMuestra();
         for (int c = 0; c < computadores; c++) {
             series[c].clear();
@@ -160,7 +176,28 @@ public class PanelMetricas extends javax.swing.JPanel {
         }
     }
 
-    //por si la ventana se cierra y no hay que seguir refrescando
+    /**
+     * Punto de conexión para el cuadro del disco y la suspensión.
+     */
+    public void setDatosDisco(long bloquesRecorridos, int suspensiones, int reactivaciones) {
+        SwingUtilities.invokeLater(() -> {
+            lblBloques.setText(String.valueOf(bloquesRecorridos));
+            lblSuspensiones.setText(String.valueOf(suspensiones));
+            lblReactivaciones.setText(String.valueOf(reactivaciones));
+        });
+    }
+
+    /**
+     * Punto de conexión para las gráficas del sistema: 0 throughput,
+     * 1 tasa de éxito, 2 tiempo de espera.
+     */
+    public void agregarMuestraSistema(int grafica, double ciclo, double valor) {
+        if (grafica < 0 || grafica >= seriesSistema.length) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> seriesSistema[grafica].add(ciclo, valor));
+    }
+
     public void detener() {
         timer.stop();
     }
@@ -174,10 +211,26 @@ public class PanelMetricas extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        panelSuperior = new javax.swing.JPanel();
         pnlTablas = new javax.swing.JPanel();
+        pnlDisco = new javax.swing.JPanel();
+        lblBloquesTitulo = new javax.swing.JLabel();
+        lblBloques = new javax.swing.JLabel();
+        lblSuspensionesTitulo = new javax.swing.JLabel();
+        lblSuspensiones = new javax.swing.JLabel();
+        lblReactivacionesTitulo = new javax.swing.JLabel();
+        lblReactivaciones = new javax.swing.JLabel();
         pnlGrafica = new javax.swing.JPanel();
+        tabGraficas = new javax.swing.JTabbedPane();
+        tabUtilizacion = new javax.swing.JPanel();
+        tabThroughput = new javax.swing.JPanel();
+        tabExito = new javax.swing.JPanel();
+        tabEspera = new javax.swing.JPanel();
 
+        setPreferredSize(new java.awt.Dimension(1000, 620));
         setLayout(new java.awt.BorderLayout());
+
+        panelSuperior.setLayout(new java.awt.GridLayout(1, 2, 8, 8));
 
         javax.swing.GroupLayout pnlTablasLayout = new javax.swing.GroupLayout(pnlTablas);
         pnlTablas.setLayout(pnlTablasLayout);
@@ -190,25 +243,67 @@ public class PanelMetricas extends javax.swing.JPanel {
             .addGap(0, 100, Short.MAX_VALUE)
         );
 
-        add(pnlTablas, java.awt.BorderLayout.PAGE_START);
+        panelSuperior.add(pnlTablas);
 
-        javax.swing.GroupLayout pnlGraficaLayout = new javax.swing.GroupLayout(pnlGrafica);
-        pnlGrafica.setLayout(pnlGraficaLayout);
-        pnlGraficaLayout.setHorizontalGroup(
-            pnlGraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        pnlGraficaLayout.setVerticalGroup(
-            pnlGraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 200, Short.MAX_VALUE)
-        );
+        pnlDisco.setBorder(javax.swing.BorderFactory.createTitledBorder("Disco y suspensión"));
+        pnlDisco.setLayout(new java.awt.GridLayout(3, 2, 6, 4));
+
+        lblBloquesTitulo.setText("Bloques recorridos:");
+        pnlDisco.add(lblBloquesTitulo);
+
+        lblBloques.setText("0");
+        pnlDisco.add(lblBloques);
+
+        lblSuspensionesTitulo.setText("Suspensiones:");
+        pnlDisco.add(lblSuspensionesTitulo);
+
+        lblSuspensiones.setText("0");
+        pnlDisco.add(lblSuspensiones);
+
+        lblReactivacionesTitulo.setText("Reactivaciones:");
+        pnlDisco.add(lblReactivacionesTitulo);
+
+        lblReactivaciones.setText("0");
+        pnlDisco.add(lblReactivaciones);
+
+        panelSuperior.add(pnlDisco);
+
+        add(panelSuperior, java.awt.BorderLayout.NORTH);
+
+        pnlGrafica.setLayout(new java.awt.BorderLayout());
+
+        tabUtilizacion.setLayout(new java.awt.BorderLayout());
+        tabGraficas.addTab("Utilización", tabUtilizacion);
+
+        tabThroughput.setLayout(new java.awt.BorderLayout());
+        tabGraficas.addTab("Throughput", tabThroughput);
+
+        tabExito.setLayout(new java.awt.BorderLayout());
+        tabGraficas.addTab("Tasa de éxito", tabExito);
+
+        tabEspera.setLayout(new java.awt.BorderLayout());
+        tabGraficas.addTab("Tiempo de espera", tabEspera);
+
+        pnlGrafica.add(tabGraficas, java.awt.BorderLayout.CENTER);
 
         add(pnlGrafica, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel lblBloques;
+    private javax.swing.JLabel lblBloquesTitulo;
+    private javax.swing.JLabel lblReactivaciones;
+    private javax.swing.JLabel lblReactivacionesTitulo;
+    private javax.swing.JLabel lblSuspensiones;
+    private javax.swing.JLabel lblSuspensionesTitulo;
+    private javax.swing.JPanel panelSuperior;
+    private javax.swing.JPanel pnlDisco;
     private javax.swing.JPanel pnlGrafica;
     private javax.swing.JPanel pnlTablas;
+    private javax.swing.JTabbedPane tabGraficas;
+    private javax.swing.JPanel tabEspera;
+    private javax.swing.JPanel tabExito;
+    private javax.swing.JPanel tabThroughput;
+    private javax.swing.JPanel tabUtilizacion;
     // End of variables declaration//GEN-END:variables
 }

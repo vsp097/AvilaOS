@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <Form version="1.3" maxVersion="1.9" type="org.netbeans.modules.form.forminfo.JPanelFormInfo">
+  <Properties>
+    <Property name="preferredSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
+      <Dimension value="[1000, 620]"/>
+    </Property>
+  </Properties>
   <AuxValues>
     <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
     <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
@@ -15,25 +20,71 @@
 
   <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
   <SubComponents>
-    <Container class="javax.swing.JPanel" name="pnlTablas">
+    <Container class="javax.swing.JPanel" name="panelSuperior">
       <Constraints>
         <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
-          <BorderConstraints direction="First"/>
+          <BorderConstraints direction="North"/>
         </Constraint>
       </Constraints>
 
-      <Layout>
-        <DimensionLayout dim="0">
-          <Group type="103" groupAlignment="0" attributes="0">
-              <EmptySpace min="0" pref="400" max="32767" attributes="0"/>
-          </Group>
-        </DimensionLayout>
-        <DimensionLayout dim="1">
-          <Group type="103" groupAlignment="0" attributes="0">
-              <EmptySpace min="0" pref="100" max="32767" attributes="0"/>
-          </Group>
-        </DimensionLayout>
+      <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
+        <Property name="columns" type="int" value="2"/>
+        <Property name="rows" type="int" value="1"/>
+        <Property name="horizontalGap" type="int" value="8"/>
+        <Property name="verticalGap" type="int" value="8"/>
       </Layout>
+      <SubComponents>
+        <Container class="javax.swing.JPanel" name="pnlTablas">
+          <Layout>
+            <DimensionLayout dim="0">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <EmptySpace min="0" pref="400" max="32767" attributes="0"/>
+              </Group>
+            </DimensionLayout>
+            <DimensionLayout dim="1">
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <EmptySpace min="0" pref="100" max="32767" attributes="0"/>
+              </Group>
+            </DimensionLayout>
+          </Layout>
+        </Container>
+        <Container class="javax.swing.JPanel" name="pnlDisco">
+          <Properties>
+            <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+              <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
+                <TitledBorder title="Disco y suspensión"/>
+              </Border>
+            </Property>
+          </Properties>
+
+          <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
+            <Property name="columns" type="int" value="2"/>
+            <Property name="rows" type="int" value="3"/>
+            <Property name="horizontalGap" type="int" value="6"/>
+            <Property name="verticalGap" type="int" value="4"/>
+          </Layout>
+          <SubComponents>
+            <Component class="javax.swing.JLabel" name="lblBloquesTitulo">
+              <Properties><Property name="text" type="java.lang.String" value="Bloques recorridos:"/></Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="lblBloques">
+              <Properties><Property name="text" type="java.lang.String" value="0"/></Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="lblSuspensionesTitulo">
+              <Properties><Property name="text" type="java.lang.String" value="Suspensiones:"/></Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="lblSuspensiones">
+              <Properties><Property name="text" type="java.lang.String" value="0"/></Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="lblReactivacionesTitulo">
+              <Properties><Property name="text" type="java.lang.String" value="Reactivaciones:"/></Properties>
+            </Component>
+            <Component class="javax.swing.JLabel" name="lblReactivaciones">
+              <Properties><Property name="text" type="java.lang.String" value="0"/></Properties>
+            </Component>
+          </SubComponents>
+        </Container>
+      </SubComponents>
     </Container>
     <Container class="javax.swing.JPanel" name="pnlGrafica">
       <Constraints>
@@ -42,18 +93,50 @@
         </Constraint>
       </Constraints>
 
-      <Layout>
-        <DimensionLayout dim="0">
-          <Group type="103" groupAlignment="0" attributes="0">
-              <EmptySpace min="0" pref="400" max="32767" attributes="0"/>
-          </Group>
-        </DimensionLayout>
-        <DimensionLayout dim="1">
-          <Group type="103" groupAlignment="0" attributes="0">
-              <EmptySpace min="0" pref="200" max="32767" attributes="0"/>
-          </Group>
-        </DimensionLayout>
-      </Layout>
+      <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
+      <SubComponents>
+        <Component class="javax.swing.JTabbedPane" name="tabGraficas">
+          <Constraints>
+            <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout" value="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout$BorderConstraintsDescription">
+              <BorderConstraints direction="Center"/>
+            </Constraint>
+          </Constraints>
+          <SubComponents>
+            <Container class="javax.swing.JPanel" name="tabUtilizacion">
+              <Constraints>
+                <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$TabConstraintsDescription">
+                  <TabConstraints tabTitle="Utilización"/>
+                </Constraint>
+              </Constraints>
+              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
+            </Container>
+            <Container class="javax.swing.JPanel" name="tabThroughput">
+              <Constraints>
+                <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$TabConstraintsDescription">
+                  <TabConstraints tabTitle="Throughput"/>
+                </Constraint>
+              </Constraints>
+              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
+            </Container>
+            <Container class="javax.swing.JPanel" name="tabExito">
+              <Constraints>
+                <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$TabConstraintsDescription">
+                  <TabConstraints tabTitle="Tasa de éxito"/>
+                </Constraint>
+              </Constraints>
+              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
+            </Container>
+            <Container class="javax.swing.JPanel" name="tabEspera">
+              <Constraints>
+                <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$TabConstraintsDescription">
+                  <TabConstraints tabTitle="Tiempo de espera"/>
+                </Constraint>
+              </Constraints>
+              <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBorderLayout"/>
+            </Container>
+          </SubComponents>
+        </Component>
+      </SubComponents>
     </Container>
   </SubComponents>
 </Form>

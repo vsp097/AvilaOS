@@ -6,27 +6,61 @@ package interfaz;
 
 import Data_Structures.Computador;
 import avilaos.GlobalClock;
+import com.google.gson.JsonParser;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JTextField;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
+ * Ventana de inicio de ÁvilaOS (parte de Diego, guía 1 del HTML de ventanas).
+ *
+ * El HTML describe dos archivos que se cargan antes de abrir el simulador.
+ * Esta rama todavía no trae el backend que consume esos archivos, así que la
+ * ventana valida que sean JSON válidos y expone puntos de conexión para que el
+ * código que los procese se registre después.
  *
  * @author diego
  */
 public class inicio extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(inicio.class.getName());
-    private Computador computador1;
-    private Computador computador2;
+
+    private static final Color VERDE = new Color(0, 128, 0);
+    private static final Color ROJO = new Color(160, 0, 0);
+
+    private boolean configuracionCargada;
+    private boolean procesosCargados;
+
+    private Consumer<String> alCargarConfiguracion;
+    private Consumer<String> alCargarProcesos;
+    private Runnable alAbrirSimulador;
+
     /**
      * Creates new form inicio
      */
     public inicio() {
-        setLocationRelativeTo(null);
-        computador1 = new Computador();
-        computador2 = new Computador();
         initComponents();
-        error1.setText("");
-        error2.setText("");
-        error3.setText("");
+        setLocationRelativeTo(null);
     }
 
     /**
@@ -39,292 +73,297 @@ public class inicio extends javax.swing.JFrame {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        ayuda = new javax.swing.JLabel();
-        panelComputadores = new javax.swing.JPanel();
-        col1 = new javax.swing.JPanel();
-        lblCpu1 = new javax.swing.JLabel();
-        CPU1 = new javax.swing.JTextField();
-        lblRam1 = new javax.swing.JLabel();
-        RAM1 = new javax.swing.JTextField();
-        type1 = new javax.swing.JComboBox<>();
-        Ingresar1 = new javax.swing.JButton();
-        error1 = new javax.swing.JLabel();
-        col2 = new javax.swing.JPanel();
-        lblCpu2 = new javax.swing.JLabel();
-        CPU2 = new javax.swing.JTextField();
-        lblRam2 = new javax.swing.JLabel();
-        RAM2 = new javax.swing.JTextField();
-        type2 = new javax.swing.JComboBox<>();
-        Ingresar2 = new javax.swing.JButton();
-        error2 = new javax.swing.JLabel();
-        panelInicio = new javax.swing.JPanel();
+        lblTitulo = new javax.swing.JLabel();
+        panelPrincipal = new javax.swing.JPanel();
+        lblConfig = new javax.swing.JLabel();
+        panelFilaConfig = new javax.swing.JPanel();
+        txtConfig = new javax.swing.JTextField();
+        btnBuscarConfig = new javax.swing.JButton();
+        btnCargarConfig = new javax.swing.JButton();
+        lblResultadoConfig = new javax.swing.JLabel();
+        lblProcesos = new javax.swing.JLabel();
+        panelFilaProcesos = new javax.swing.JPanel();
+        txtProcesos = new javax.swing.JTextField();
+        btnBuscarProcesos = new javax.swing.JButton();
+        btnCargarProcesos = new javax.swing.JButton();
+        lblResultadoProcesos = new javax.swing.JLabel();
+        jSeparator1 = new javax.swing.JSeparator();
+        lblAyuda = new javax.swing.JLabel();
         panelBoton = new javax.swing.JPanel();
-        error3 = new javax.swing.JLabel();
-        inicio = new javax.swing.JButton();
+        btnAbrir = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("ÁvilaOS — Inicio");
-        setMinimumSize(new java.awt.Dimension(560, 320));
+        setMinimumSize(new java.awt.Dimension(720, 330));
         getContentPane().setLayout(new java.awt.BorderLayout());
 
-        ayuda.setText("<html>Paso 1: escribe la CPU y la RAM de cada computador y presiona Ingresar.<br>Paso 2: presiona Iniciar simulación.</html>");
-        ayuda.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        getContentPane().add(ayuda, java.awt.BorderLayout.NORTH);
+        lblTitulo.setText("ÁvilaOS — Cargar sistema");
+        lblTitulo.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 12, 6, 12));
+        getContentPane().add(lblTitulo, java.awt.BorderLayout.NORTH);
 
-        panelComputadores.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 10, 0, 10));
-        panelComputadores.setLayout(new java.awt.GridLayout(1, 2, 10, 0));
+        panelPrincipal.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        panelPrincipal.setLayout(new java.awt.GridBagLayout());
 
-        col1.setBorder(javax.swing.BorderFactory.createTitledBorder("Computador 1"));
-        col1.setLayout(new java.awt.GridBagLayout());
-
-        lblCpu1.setText("CPU");
+        lblConfig.setText("Archivo de configuración");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col1.add(lblCpu1, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(4, 0, 2, 4);
+        panelPrincipal.add(lblConfig, gridBagConstraints);
 
-        CPU1.setText("");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col1.add(CPU1, gridBagConstraints);
+        panelFilaConfig.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEADING, 6, 2));
 
-        lblRam1.setText("RAM");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col1.add(lblRam1, gridBagConstraints);
+        txtConfig.setColumns(38);
+        panelFilaConfig.add(txtConfig);
 
-        RAM1.setText("");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col1.add(RAM1, gridBagConstraints);
-
-        type1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "mb", "GB" }));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col1.add(type1, gridBagConstraints);
-
-        Ingresar1.setText("Ingresar");
-        Ingresar1.addActionListener(new java.awt.event.ActionListener() {
+        btnBuscarConfig.setText("Buscar");
+        btnBuscarConfig.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                Ingresar1ActionPerformed(evt);
+                btnBuscarConfigActionPerformed(evt);
             }
         });
+        panelFilaConfig.add(btnBuscarConfig);
+
+        btnCargarConfig.setText("Cargar");
+        btnCargarConfig.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCargarConfigActionPerformed(evt);
+            }
+        });
+        panelFilaConfig.add(btnCargarConfig);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 2, 0);
+        panelPrincipal.add(panelFilaConfig, gridBagConstraints);
+
+        lblResultadoConfig.setText(" ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col1.add(Ingresar1, gridBagConstraints);
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 8, 0);
+        panelPrincipal.add(lblResultadoConfig, gridBagConstraints);
 
-        error1.setText(" ");
+        lblProcesos.setText("Archivo de procesos");
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
-        gridBagConstraints.gridwidth = 3;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col1.add(error1, gridBagConstraints);
-
-        panelComputadores.add(col1);
-
-        col2.setBorder(javax.swing.BorderFactory.createTitledBorder("Computador 2"));
-        col2.setLayout(new java.awt.GridBagLayout());
-
-        lblCpu2.setText("CPU");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col2.add(lblCpu2, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(4, 0, 2, 4);
+        panelPrincipal.add(lblProcesos, gridBagConstraints);
 
-        CPU2.setText("");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col2.add(CPU2, gridBagConstraints);
+        panelFilaProcesos.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEADING, 6, 2));
 
-        lblRam2.setText("RAM");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col2.add(lblRam2, gridBagConstraints);
+        txtProcesos.setColumns(38);
+        panelFilaProcesos.add(txtProcesos);
 
-        RAM2.setText("");
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col2.add(RAM2, gridBagConstraints);
-
-        type2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "mb", "GB" }));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 2;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col2.add(type2, gridBagConstraints);
-
-        Ingresar2.setText("Ingresar");
-        Ingresar2.addActionListener(new java.awt.event.ActionListener() {
+        btnBuscarProcesos.setText("Buscar");
+        btnBuscarProcesos.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                Ingresar2ActionPerformed(evt);
+                btnBuscarProcesosActionPerformed(evt);
             }
         });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col2.add(Ingresar2, gridBagConstraints);
+        panelFilaProcesos.add(btnBuscarProcesos);
 
-        error2.setText(" ");
+        btnCargarProcesos.setText("Cargar");
+        btnCargarProcesos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCargarProcesosActionPerformed(evt);
+            }
+        });
+        panelFilaProcesos.add(btnCargarProcesos);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        gridBagConstraints.insets = new java.awt.Insets(4, 0, 4, 8);
-        col2.add(error2, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 2, 0);
+        panelPrincipal.add(panelFilaProcesos, gridBagConstraints);
 
-        panelComputadores.add(col2);
+        lblResultadoProcesos.setText(" ");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 8, 0);
+        panelPrincipal.add(lblResultadoProcesos, gridBagConstraints);
 
-        getContentPane().add(panelComputadores, java.awt.BorderLayout.CENTER);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(2, 0, 6, 0);
+        panelPrincipal.add(jSeparator1, gridBagConstraints);
 
-        panelInicio.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panelInicio.setLayout(new java.awt.BorderLayout());
+        lblAyuda.setText("Busca los dos archivos JSON y cárgalos para habilitar el simulador.");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 7;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(0, 0, 2, 0);
+        panelPrincipal.add(lblAyuda, gridBagConstraints);
 
-        error3.setText(" ");
-        panelInicio.add(error3, java.awt.BorderLayout.NORTH);
+        getContentPane().add(panelPrincipal, java.awt.BorderLayout.CENTER);
 
+        panelBoton.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 12, 12, 12));
         panelBoton.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER));
 
-        inicio.setText("Iniciar simulación");
-        inicio.addActionListener(new java.awt.event.ActionListener() {
+        btnAbrir.setText("Abrir el simulador");
+        btnAbrir.setEnabled(false);
+        btnAbrir.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                inicioActionPerformed(evt);
+                btnAbrirActionPerformed(evt);
             }
         });
-        panelBoton.add(inicio);
+        panelBoton.add(btnAbrir);
 
-        panelInicio.add(panelBoton, java.awt.BorderLayout.CENTER);
-
-        getContentPane().add(panelInicio, java.awt.BorderLayout.SOUTH);
+        getContentPane().add(panelBoton, java.awt.BorderLayout.SOUTH);
 
         pack();
+        setSize(720, 330);
     }// </editor-fold>//GEN-END:initComponents
 
+    private void btnBuscarConfigActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarConfigActionPerformed
+        buscarArchivo(txtConfig, lblResultadoConfig);
+        configuracionCargada = false;
+        actualizarBotonAbrir();
+    }//GEN-LAST:event_btnBuscarConfigActionPerformed
 
-
-
-    private void Ingresar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Ingresar1ActionPerformed
-        // TODO add your handling code here:
-        String Cpu1 = CPU1.getText();
-        String Ram1 = RAM1.getText();
-        if ((!Cpu1.equals("") && !Cpu1.equals("Ingrese el CPU:"))&& (!Ram1.equals("") && !Ram1.equals("Ingrese la RAM:"))){
-            try{
-                float r = Float.parseFloat(Ram1);
-                computador1.setCPUt(Cpu1);
-                computador1.setRAMt(r);
-                computador1.settype( (String) type1.getSelectedItem());
-                error1.setText("Listo");
-            }
-            catch (NumberFormatException e){
-                error1.setText("La ram debe de ser un numero");
-            }
-            
-        }else{
-            error1.setText("Complete todos los campos");
+    private void btnCargarConfigActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCargarConfigActionPerformed
+        configuracionCargada = cargarArchivo(txtConfig.getText(), lblResultadoConfig);
+        if (configuracionCargada && alCargarConfiguracion != null) {
+            alCargarConfiguracion.accept(txtConfig.getText());
         }
-        
-    }//GEN-LAST:event_Ingresar1ActionPerformed
+        actualizarBotonAbrir();
+    }//GEN-LAST:event_btnCargarConfigActionPerformed
 
-    private void inicioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_inicioActionPerformed
-        // TODO add your handling code here:
-        if (computador1.isnull() || computador2.isnull()){
-            error3.setText("Complete la creacion de los componentes");
-        }else{
-            GlobalClock gc = new GlobalClock();
-            gc.setcduration(1000);
-            main v2 = new main(computador1, computador2, gc);
-            v2.setVisible(true);
-            this.dispose();
+    private void btnBuscarProcesosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarProcesosActionPerformed
+        buscarArchivo(txtProcesos, lblResultadoProcesos);
+        procesosCargados = false;
+        actualizarBotonAbrir();
+    }//GEN-LAST:event_btnBuscarProcesosActionPerformed
+
+    private void btnCargarProcesosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCargarProcesosActionPerformed
+        procesosCargados = cargarArchivo(txtProcesos.getText(), lblResultadoProcesos);
+        if (procesosCargados && alCargarProcesos != null) {
+            alCargarProcesos.accept(txtProcesos.getText());
         }
-    }//GEN-LAST:event_inicioActionPerformed
+        actualizarBotonAbrir();
+    }//GEN-LAST:event_btnCargarProcesosActionPerformed
 
-
-
-
-
-
-
-    private void Ingresar2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Ingresar2ActionPerformed
-        // TODO add your handling code here:
-         String Cpu1 = CPU2.getText();
-        String Ram1 = RAM2.getText();
-        if ((!Cpu1.equals("") && !Cpu1.equals("Ingrese el CPU:"))&& (!Ram1.equals("") && !Ram1.equals("Ingrese la RAM:"))){
-            try{
-                float r = Float.parseFloat(Ram1);
-                computador2.setCPUt(Cpu1);
-                computador2.setRAMt(r);
-                computador2.settype( (String) type2.getSelectedItem());
-                error2.setText("Listo");
-            }
-            catch (NumberFormatException e){
-                error2.setText("La ram debe de ser un numero");
-            }
-            
-        }else{
-            error2.setText("Complete todos los campos");
+    private void btnAbrirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAbrirActionPerformed
+        if (!configuracionCargada || !procesosCargados) {
+            return;
         }
-    }//GEN-LAST:event_Ingresar2ActionPerformed
+        if (alAbrirSimulador != null) {
+            alAbrirSimulador.run();
+            return;
+        }
+        // Sin listener todavía se mantiene el arranque anterior para no romper la ejecución.
+        GlobalClock gc = new GlobalClock();
+        gc.setcduration(1000);
+        main ventana = new main(new Computador(), new Computador(), gc);
+        ventana.setVisible(true);
+        dispose();
+    }//GEN-LAST:event_btnAbrirActionPerformed
+
+    private void buscarArchivo(JTextField campo, JLabel resultado) {
+        JFileChooser selector = new JFileChooser();
+        selector.setDialogTitle("Seleccionar archivo JSON");
+        selector.setFileFilter(new FileNameExtensionFilter("Archivos JSON", "json"));
+        if (selector.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            campo.setText(selector.getSelectedFile().getAbsolutePath());
+            resultado.setText(" ");
+            resultado.setForeground(getForeground());
+        }
+    }
+
+    private boolean cargarArchivo(String ruta, JLabel resultado) {
+        if (ruta == null || ruta.isBlank()) {
+            resultado.setText("Seleccione un archivo");
+            resultado.setForeground(ROJO);
+            return false;
+        }
+        File archivo = new File(ruta);
+        if (!archivo.isFile() || !archivo.canRead()) {
+            resultado.setText("No se puede leer el archivo");
+            resultado.setForeground(ROJO);
+            return false;
+        }
+        try (Reader lector = new InputStreamReader(new FileInputStream(archivo), StandardCharsets.UTF_8)) {
+            JsonParser.parseReader(lector);
+        } catch (IOException | RuntimeException ex) {
+            resultado.setText("El archivo no es un JSON válido");
+            resultado.setForeground(ROJO);
+            logger.warning(ex.getMessage());
+            return false;
+        }
+        resultado.setText("Archivo cargado correctamente");
+        resultado.setForeground(VERDE);
+        return true;
+    }
+
+    private void actualizarBotonAbrir() {
+        btnAbrir.setEnabled(configuracionCargada && procesosCargados);
+    }
+
+    /**
+     * Punto de conexión: recibe la ruta del archivo de configuración cargado.
+     */
+    public void setOnConfiguracionCargada(Consumer<String> listener) {
+        alCargarConfiguracion = listener;
+    }
+
+    /**
+     * Punto de conexión: recibe la ruta del archivo de procesos cargado.
+     */
+    public void setOnProcesosCargados(Consumer<String> listener) {
+        alCargarProcesos = listener;
+    }
+
+    /**
+     * Punto de conexión: se llama cuando se aprueba abrir el simulador.
+     */
+    public void setOnAbrirSimulador(Runnable listener) {
+        alAbrirSimulador = listener;
+    }
+
+    public boolean isConfiguracionCargada() {
+        return configuracionCargada;
+    }
+
+    public boolean isProcesosCargados() {
+        return procesosCargados;
+    }
+
+    public String getRutaConfiguracion() {
+        return txtConfig.getText();
+    }
+
+    public String getRutaProcesos() {
+        return txtProcesos.getText();
+    }
 
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -335,34 +374,27 @@ public class inicio extends javax.swing.JFrame {
         } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
             logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-
-        /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new inicio().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextField CPU1;
-    private javax.swing.JTextField CPU2;
-    private javax.swing.JButton Ingresar1;
-    private javax.swing.JButton Ingresar2;
-    private javax.swing.JTextField RAM1;
-    private javax.swing.JTextField RAM2;
-    private javax.swing.JLabel ayuda;
-    private javax.swing.JPanel col1;
-    private javax.swing.JPanel col2;
-    private javax.swing.JLabel error1;
-    private javax.swing.JLabel error2;
-    private javax.swing.JLabel error3;
-    private javax.swing.JButton inicio;
-    private javax.swing.JLabel lblCpu1;
-    private javax.swing.JLabel lblCpu2;
-    private javax.swing.JLabel lblRam1;
-    private javax.swing.JLabel lblRam2;
-    private javax.swing.JPanel panelComputadores;
+    private javax.swing.JButton btnAbrir;
+    private javax.swing.JButton btnBuscarConfig;
+    private javax.swing.JButton btnBuscarProcesos;
+    private javax.swing.JButton btnCargarConfig;
+    private javax.swing.JButton btnCargarProcesos;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JLabel lblAyuda;
+    private javax.swing.JLabel lblConfig;
+    private javax.swing.JLabel lblProcesos;
+    private javax.swing.JLabel lblResultadoConfig;
+    private javax.swing.JLabel lblResultadoProcesos;
+    private javax.swing.JLabel lblTitulo;
     private javax.swing.JPanel panelBoton;
-    private javax.swing.JPanel panelInicio;
-    private javax.swing.JComboBox<String> type1;
-    private javax.swing.JComboBox<String> type2;
+    private javax.swing.JPanel panelFilaConfig;
+    private javax.swing.JPanel panelFilaProcesos;
+    private javax.swing.JPanel panelPrincipal;
+    private javax.swing.JTextField txtConfig;
+    private javax.swing.JTextField txtProcesos;
     // End of variables declaration//GEN-END:variables
 }
