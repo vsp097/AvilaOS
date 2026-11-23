@@ -1,75 +1,66 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
  */
 package interfaz;
 
+//--- bloque a: imports ---
 import avilaos.Bloque;
 import avilaos.DireccionCabezal;
 import avilaos.Disco;
 import avilaos.PoliticaDisco;
 import avilaos.SolicitudES;
-import java.awt.BasicStroke;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GridLayout;
-import java.awt.RenderingHints;
-import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ToolTipManager;
+import javax.swing.SwingConstants;
+import javax.swing.border.Border;
+//--- fin del bloque a: imports ---
 
 /**
  *
  * @author andrea
  */
 //el disco: todos sus bloques numerados, quien ocupa cada uno y donde esta el cabezal
-public class PanelDisco extends JPanel {
+public class PanelDisco extends javax.swing.JPanel {
 
-    private static final int COLUMNAS = 20;
+    //--- bloque a: campos ---
     private static final int ANCHO = 29;
     private static final int ALTO = 24;
-    private static final int MARGEN = 8;
-    private static final int SEPARACION = 26;
+    private static final Border BORDE = BorderFactory.createLineBorder(new Color(190, 190, 190));
+    private static final Border BORDE_CABEZAL = BorderFactory.createLineBorder(Paleta.CABEZAL, 3);
 
-    private JLabel lblCabezal = new JLabel();
-    private JLabel lblEstado = new JLabel();
-    private JLabel lblNumeros = new JLabel();
-    private JLabel lblAtendidas = new JLabel();
-    private Mapa mapa = new Mapa();
+    //un JLabel por bloque: primero los de archivos y despues los del area de intercambio
+    private JLabel[] celdas = new JLabel[0];
+    //lo que muestra cada celda, para cambiar solo las que cambiaron
+    private String[] firmas = new String[0];
+    private int bloquesArchivos = -1;
+    //--- fin del bloque a: campos ---
 
-    private Bloque[] bloques = new Bloque[0];
-    private int bloquesArchivos = 0;
-    private int cabezal = 0;
-
+    /**
+     * Creates new form PanelDisco
+     */
     public PanelDisco() {
-        setLayout(new BorderLayout(0, 4));
-        setBorder(BorderFactory.createTitledBorder("Disco"));
-        JPanel arriba = new JPanel(new GridLayout(4, 1));
-        lblCabezal.setFont(lblCabezal.getFont().deriveFont(Font.BOLD, 13f));
-        arriba.add(lblCabezal);
-        arriba.add(lblEstado);
-        arriba.add(lblNumeros);
-        arriba.add(lblAtendidas);
-        add(arriba, BorderLayout.NORTH);
-        JScrollPane scroll = new JScrollPane(mapa);
-        scroll.getVerticalScrollBar().setUnitIncrement(ALTO);
-        add(scroll, BorderLayout.CENTER);
-        ToolTipManager.sharedInstance().registerComponent(mapa);
+        initComponents();
+        //--- bloque b ---
+        scrMapa.getVerticalScrollBar().setUnitIncrement(ALTO);
+        //--- fin del bloque b ---
     }
 
+    //--- bloque c ---
     //lee el estado del disco y lo dibuja; el disco no se entera
     public void mostrar(Disco disco) {
-        bloques = disco.copiarBloques();
-        bloquesArchivos = disco.getBloquesArchivos();
-        cabezal = disco.getCabezal();
+        Bloque[] bloques = disco.copiarBloques();
+        int cabezal = disco.getCabezal();
+        if (bloques.length != celdas.length || disco.getBloquesArchivos() != bloquesArchivos) {
+            armarCeldas(bloques.length, disco.getBloquesArchivos());
+        }
+        for (int i = 0; i < bloques.length; i++) {
+            pintar(i, bloques[i], i == cabezal);
+        }
         DireccionCabezal dir = disco.getDireccion();
         lblCabezal.setText("Cabezal en el bloque " + cabezal + "  " + (dir == DireccionCabezal.ARRIBA ? "↑" : "↓")
                 + "  " + dir + "     Politica: " + disco.getPolitica());
@@ -93,101 +84,163 @@ public class PanelDisco extends JPanel {
                 + String.format("%.1f", disco.getEsperaPromedio()) + " ciclos     Libres: " + disco.getLibres() + " de "
                 + bloquesArchivos);
         lblAtendidas.setText("Solicitudes atendidas por politica: " + porPolitica);
-        mapa.revalidate();
-        mapa.repaint();
     }
 
-    private class Mapa extends JPanel {
-
-        Mapa() {
-            setBackground(Color.WHITE);
-        }
-
-        private int filas(int cantidad) {
-            return (cantidad + COLUMNAS - 1) / COLUMNAS;
-        }
-
-        //donde empieza a dibujarse el area de intercambio
-        private int ySwap() {
-            return MARGEN + 16 + filas(bloquesArchivos) * ALTO + SEPARACION;
-        }
-
-        @Override
-        public Dimension getPreferredSize() {
-            int swap = bloques.length - bloquesArchivos;
-            int alto = ySwap() + filas(swap) * ALTO + MARGEN;
-            return new Dimension(MARGEN * 2 + COLUMNAS * ANCHO, alto);
-        }
-
-        //en que esquina se dibuja el bloque i
-        private int xDe(int i) {
-            int pos = i < bloquesArchivos ? i : i - bloquesArchivos;
-            return MARGEN + (pos % COLUMNAS) * ANCHO;
-        }
-
-        private int yDe(int i) {
-            if (i < bloquesArchivos) {
-                return MARGEN + 16 + (i / COLUMNAS) * ALTO;
-            }
-            return ySwap() + ((i - bloquesArchivos) / COLUMNAS) * ALTO;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g0) {
-            super.paintComponent(g0);
-            Graphics2D g = (Graphics2D) g0;
-            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g.setFont(getFont().deriveFont(Font.BOLD, 11f));
-            g.setColor(Color.DARK_GRAY);
-            g.drawString("Archivos (bloques 0 a " + (bloquesArchivos - 1) + ")", MARGEN, MARGEN + 10);
-            if (bloques.length > bloquesArchivos) {
-                g.drawString("Area de intercambio (bloques " + bloquesArchivos + " a " + (bloques.length - 1) + ")",
-                        MARGEN, ySwap() - 6);
-            }
-            g.setFont(getFont().deriveFont(Font.PLAIN, 10f));
-            FontMetrics fm = g.getFontMetrics();
-            for (int i = 0; i < bloques.length; i++) {
-                Bloque b = bloques[i];
-                int x = xDe(i);
-                int y = yDe(i);
-                Color fondo;
-                if (b.esSwap()) {
-                    fondo = b.estaOcupado() ? Paleta.SWAP_OCUPADO : Paleta.SWAP_LIBRE;
-                } else {
-                    fondo = b.estaOcupado() ? Paleta.de(b.getColor()) : Paleta.LIBRE;
-                }
-                g.setColor(fondo);
-                g.fillRect(x + 1, y + 1, ANCHO - 2, ALTO - 2);
-                g.setColor(new Color(190, 190, 190));
-                g.drawRect(x + 1, y + 1, ANCHO - 3, ALTO - 3);
-                g.setColor(b.esSwap() && b.estaOcupado() ? Color.WHITE : Color.BLACK);
-                String texto = String.valueOf(b.getNumero());
-                g.drawString(texto, x + (ANCHO - fm.stringWidth(texto)) / 2, y + ALTO / 2 + 4);
-            }
-            //el cabezal es el recuadro rojo
-            if (cabezal >= 0 && cabezal < bloques.length) {
-                g.setColor(Paleta.CABEZAL);
-                g.setStroke(new BasicStroke(3f));
-                g.drawRect(xDe(cabezal), yDe(cabezal), ANCHO - 1, ALTO - 1);
+    //crea un JLabel por bloque; solo pasa al principio o si cambia el tamano del disco
+    private void armarCeldas(int total, int deArchivos) {
+        bloquesArchivos = deArchivos;
+        pnlMapaArchivos.removeAll();
+        pnlMapaSwap.removeAll();
+        celdas = new JLabel[total];
+        firmas = new String[total];
+        for (int i = 0; i < total; i++) {
+            JLabel c = new JLabel(String.valueOf(i), SwingConstants.CENTER);
+            c.setOpaque(true);
+            c.setPreferredSize(new Dimension(ANCHO, ALTO));
+            c.setFont(c.getFont().deriveFont(Font.PLAIN, 10f));
+            c.setBorder(BORDE);
+            celdas[i] = c;
+            if (i < deArchivos) {
+                pnlMapaArchivos.add(c);
+            } else {
+                pnlMapaSwap.add(c);
             }
         }
+        lblTituloArchivos.setText("Archivos (bloques 0 a " + (deArchivos - 1) + ")");
+        boolean haySwap = total > deArchivos;
+        lblTituloSwap.setText(haySwap ? "Area de intercambio (bloques " + deArchivos + " a " + (total - 1) + ")" : " ");
+        pnlZonaSwap.setVisible(haySwap);
+        pnlMapaArchivos.revalidate();
+        pnlMapaSwap.revalidate();
+    }
 
-        //al pasar el raton por un bloque dice quien lo ocupa y cual es el siguiente de la cadena
-        @Override
-        public String getToolTipText(MouseEvent e) {
-            for (int i = 0; i < bloques.length; i++) {
-                int x = xDe(i);
-                int y = yDe(i);
-                if (e.getX() >= x && e.getX() < x + ANCHO && e.getY() >= y && e.getY() < y + ALTO) {
-                    Bloque b = bloques[i];
-                    if (!b.estaOcupado()) {
-                        return "Bloque " + i + ": libre";
-                    }
-                    String sig = b.getSiguiente() < 0 ? "es el ultimo de la cadena" : "siguiente: " + b.getSiguiente();
-                    return "Bloque " + i + ": " + b.getOcupante() + " (" + sig + ")";
-                }
-            }
-            return null;
+    //color de fondo, borde rojo si ahi esta el cabezal, y el tooltip con el ocupante y el siguiente
+    private void pintar(int i, Bloque b, boolean esCabezal) {
+        String firma = b.estaOcupado() + "|" + b.getColor() + "|" + b.getOcupante() + "|" + b.getSiguiente() + "|" + esCabezal;
+        if (firma.equals(firmas[i])) {
+            return;
+        }
+        firmas[i] = firma;
+        JLabel c = celdas[i];
+        if (b.esSwap()) {
+            c.setBackground(b.estaOcupado() ? Paleta.SWAP_OCUPADO : Paleta.SWAP_LIBRE);
+            c.setForeground(b.estaOcupado() ? Color.WHITE : Color.BLACK);
+        } else {
+            c.setBackground(b.estaOcupado() ? Paleta.de(b.getColor()) : Paleta.LIBRE);
+            c.setForeground(Color.BLACK);
+        }
+        c.setBorder(esCabezal ? BORDE_CABEZAL : BORDE);
+        if (!b.estaOcupado()) {
+            c.setToolTipText("Bloque " + i + ": libre" + (esCabezal ? " (aqui esta el cabezal)" : ""));
+        } else {
+            String sig = b.getSiguiente() < 0 ? "es el ultimo de la cadena" : "siguiente: " + b.getSiguiente();
+            c.setToolTipText("Bloque " + i + ": " + b.getOcupante() + " (" + sig + ")" + (esCabezal ? " - cabezal" : ""));
         }
     }
+    //--- fin del bloque c ---
+
+    //--- diseno: esto lo genera el disenador de NetBeans ---
+    @SuppressWarnings("unchecked")
+    private void initComponents() {
+
+        pnlInfo = new javax.swing.JPanel();
+        lblCabezal = new javax.swing.JLabel();
+        lblEstado = new javax.swing.JLabel();
+        lblNumeros = new javax.swing.JLabel();
+        lblAtendidas = new javax.swing.JLabel();
+        scrMapa = new javax.swing.JScrollPane();
+        pnlContenido = new javax.swing.JPanel();
+        pnlZonaArchivos = new javax.swing.JPanel();
+        lblTituloArchivos = new javax.swing.JLabel();
+        pnlEnvolturaArchivos = new javax.swing.JPanel();
+        pnlMapaArchivos = new javax.swing.JPanel();
+        pnlZonaSwap = new javax.swing.JPanel();
+        lblTituloSwap = new javax.swing.JLabel();
+        pnlEnvolturaSwap = new javax.swing.JPanel();
+        pnlMapaSwap = new javax.swing.JPanel();
+
+        setBorder(javax.swing.BorderFactory.createTitledBorder("Disco"));
+        setLayout(new java.awt.BorderLayout(0, 4));
+
+        pnlInfo.setLayout(new java.awt.GridLayout(4, 1));
+
+        lblCabezal.setFont(lblCabezal.getFont().deriveFont(lblCabezal.getFont().getStyle() | java.awt.Font.BOLD, lblCabezal.getFont().getSize()+1));
+        lblCabezal.setText("Cabezal");
+        pnlInfo.add(lblCabezal);
+
+        lblEstado.setText(" ");
+        pnlInfo.add(lblEstado);
+
+        lblNumeros.setText(" ");
+        pnlInfo.add(lblNumeros);
+
+        lblAtendidas.setText(" ");
+        pnlInfo.add(lblAtendidas);
+
+        add(pnlInfo, java.awt.BorderLayout.PAGE_START);
+
+        pnlContenido.setBackground(new java.awt.Color(255, 255, 255));
+        pnlContenido.setLayout(new java.awt.BorderLayout());
+
+        pnlZonaArchivos.setBackground(new java.awt.Color(255, 255, 255));
+        pnlZonaArchivos.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        pnlZonaArchivos.setLayout(new java.awt.BorderLayout(0, 4));
+
+        lblTituloArchivos.setFont(lblTituloArchivos.getFont().deriveFont(lblTituloArchivos.getFont().getStyle() | java.awt.Font.BOLD, lblTituloArchivos.getFont().getSize()-1));
+        lblTituloArchivos.setText("Archivos");
+        pnlZonaArchivos.add(lblTituloArchivos, java.awt.BorderLayout.PAGE_START);
+
+        pnlEnvolturaArchivos.setBackground(new java.awt.Color(255, 255, 255));
+        pnlEnvolturaArchivos.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+
+        pnlMapaArchivos.setBackground(new java.awt.Color(255, 255, 255));
+        pnlMapaArchivos.setLayout(new java.awt.GridLayout(0, 20));
+        pnlEnvolturaArchivos.add(pnlMapaArchivos);
+
+        pnlZonaArchivos.add(pnlEnvolturaArchivos, java.awt.BorderLayout.CENTER);
+
+        pnlContenido.add(pnlZonaArchivos, java.awt.BorderLayout.PAGE_START);
+
+        pnlZonaSwap.setBackground(new java.awt.Color(255, 255, 255));
+        pnlZonaSwap.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 8, 8, 8));
+        pnlZonaSwap.setLayout(new java.awt.BorderLayout(0, 4));
+
+        lblTituloSwap.setFont(lblTituloSwap.getFont().deriveFont(lblTituloSwap.getFont().getStyle() | java.awt.Font.BOLD, lblTituloSwap.getFont().getSize()-1));
+        lblTituloSwap.setText("Area de intercambio");
+        pnlZonaSwap.add(lblTituloSwap, java.awt.BorderLayout.PAGE_START);
+
+        pnlEnvolturaSwap.setBackground(new java.awt.Color(255, 255, 255));
+        pnlEnvolturaSwap.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+
+        pnlMapaSwap.setBackground(new java.awt.Color(255, 255, 255));
+        pnlMapaSwap.setLayout(new java.awt.GridLayout(0, 20));
+        pnlEnvolturaSwap.add(pnlMapaSwap);
+
+        pnlZonaSwap.add(pnlEnvolturaSwap, java.awt.BorderLayout.CENTER);
+
+        pnlContenido.add(pnlZonaSwap, java.awt.BorderLayout.CENTER);
+
+        scrMapa.setViewportView(pnlContenido);
+
+        add(scrMapa, java.awt.BorderLayout.CENTER);
+    }
+
+    // Variables declaration - do not modify
+    private javax.swing.JLabel lblAtendidas;
+    private javax.swing.JLabel lblCabezal;
+    private javax.swing.JLabel lblEstado;
+    private javax.swing.JLabel lblNumeros;
+    private javax.swing.JLabel lblTituloArchivos;
+    private javax.swing.JLabel lblTituloSwap;
+    private javax.swing.JPanel pnlContenido;
+    private javax.swing.JPanel pnlEnvolturaArchivos;
+    private javax.swing.JPanel pnlEnvolturaSwap;
+    private javax.swing.JPanel pnlInfo;
+    private javax.swing.JPanel pnlMapaArchivos;
+    private javax.swing.JPanel pnlMapaSwap;
+    private javax.swing.JPanel pnlZonaArchivos;
+    private javax.swing.JPanel pnlZonaSwap;
+    private javax.swing.JScrollPane scrMapa;
+    // End of variables declaration
+    //--- fin del diseno ---
 }
