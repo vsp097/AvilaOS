@@ -1,48 +1,46 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
  */
 package interfaz;
 
+//--- bloque a: imports ---
 import avilaos.Disco;
 import avilaos.InfoNodo;
 import avilaos.SolicitudES;
 import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.GridLayout;
-import javax.swing.BorderFactory;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+//--- fin del bloque a: imports ---
 
 /**
  *
  * @author andrea
  */
 //las dos tablas: la cola de E/S del disco y la tabla de asignacion de archivos
-public class PanelTablas extends JPanel {
+public class PanelTablas extends javax.swing.JPanel {
 
+    //--- bloque a: campos ---
+    //los modelos no son componentes, por eso se crean aqui y no en el disenador
     private ModeloCola modeloCola = new ModeloCola();
     private ModeloAsignacion modeloAsignacion = new ModeloAsignacion();
-    private JTable tablaCola = new JTable(modeloCola);
-    private JTable tablaAsignacion = new JTable(modeloAsignacion);
     //lo ultimo que se mostro, para no refrescar las tablas si no cambio nada
     private String firmaCola = "";
     private String firmaAsignacion = "";
+    //--- fin del bloque a: campos ---
 
+    /**
+     * Creates new form PanelTablas
+     */
     public PanelTablas() {
-        setLayout(new GridLayout(2, 1, 0, 4));
-        setPreferredSize(new Dimension(440, 300));
-        JScrollPane s1 = new JScrollPane(tablaCola);
-        s1.setBorder(BorderFactory.createTitledBorder("Cola de E/S del disco"));
-        JScrollPane s2 = new JScrollPane(tablaAsignacion);
-        s2.setBorder(BorderFactory.createTitledBorder("Tabla de asignacion de archivos"));
-        add(s1);
-        add(s2);
+        initComponents();
+        //--- bloque b ---
+        tablaCola.setModel(modeloCola);
+        tablaAsignacion.setModel(modeloAsignacion);
         tablaCola.setFillsViewportHeight(true);
         tablaAsignacion.setFillsViewportHeight(true);
+        //la primera columna se pinta con el color del archivo
         tablaAsignacion.getColumnModel().getColumn(0).setCellRenderer(new CeldaColor());
         tablaAsignacion.getColumnModel().getColumn(0).setMaxWidth(44);
         tablaAsignacion.getColumnModel().getColumn(1).setPreferredWidth(150);
@@ -52,8 +50,10 @@ public class PanelTablas extends JPanel {
         tablaCola.getColumnModel().getColumn(3).setPreferredWidth(150);
         tablaCola.getColumnModel().getColumn(4).setPreferredWidth(50);
         tablaCola.getColumnModel().getColumn(5).setPreferredWidth(50);
+        //--- fin del bloque b ---
     }
 
+    //--- bloque c ---
     public void mostrarCola(Disco disco, long ciclo) {
         SolicitudES actual = disco.getActual();
         SolicitudES[] cola = disco.copiarCola();
@@ -175,4 +175,54 @@ public class PanelTablas extends JPanel {
             return this;
         }
     }
+    //--- fin del bloque c ---
+
+    //--- diseno: esto lo genera el disenador de NetBeans ---
+    @SuppressWarnings("unchecked")
+    private void initComponents() {
+
+        scrCola = new javax.swing.JScrollPane();
+        tablaCola = new javax.swing.JTable();
+        scrAsignacion = new javax.swing.JScrollPane();
+        tablaAsignacion = new javax.swing.JTable();
+
+        setPreferredSize(new java.awt.Dimension(440, 300));
+        setLayout(new java.awt.GridLayout(2, 1, 0, 4));
+
+        scrCola.setBorder(javax.swing.BorderFactory.createTitledBorder("Cola de E/S del disco"));
+
+        tablaCola.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+
+            }
+        ));
+        scrCola.setViewportView(tablaCola);
+
+        add(scrCola);
+
+        scrAsignacion.setBorder(javax.swing.BorderFactory.createTitledBorder("Tabla de asignacion de archivos"));
+
+        tablaAsignacion.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+
+            }
+        ));
+        scrAsignacion.setViewportView(tablaAsignacion);
+
+        add(scrAsignacion);
+    }
+
+    // Variables declaration - do not modify
+    private javax.swing.JScrollPane scrAsignacion;
+    private javax.swing.JScrollPane scrCola;
+    private javax.swing.JTable tablaAsignacion;
+    private javax.swing.JTable tablaCola;
+    // End of variables declaration
+    //--- fin del diseno ---
 }
