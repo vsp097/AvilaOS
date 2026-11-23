@@ -29,6 +29,11 @@ public class PCB {
     protected boolean solicitudHecha = false;
     //true si viene del archivo de procesos y el disco lo esta esperando
     protected boolean deCargaInicial = false;
+    //donde quedo en el area de intercambio cuando esta suspendido, -1 si esta en la RAM
+    protected int primerSwap = -1;
+    protected int bloquesSwap = 0;
+    //true mientras tiene una solicitud SUSPENDER o REACTIVAR en el disco
+    protected boolean enIntercambio = false;
     //datos para las metricas
     protected long llegada = 0;
     protected boolean tuvoDeadline = false;
@@ -264,5 +269,29 @@ public class PCB {
             return "";
         }
         return operacion + " " + ruta;
+    }
+
+    public int getPrimerSwap() {
+        return primerSwap;
+    }
+
+    public void setPrimerSwap(int b) {
+        primerSwap = b;
+    }
+
+    public int getBloquesSwap() {
+        return bloquesSwap;
+    }
+
+    public void setBloquesSwap(int b) {
+        bloquesSwap = b;
+    }
+
+    public boolean getEnIntercambio() {
+        return enIntercambio;
+    }
+
+    public void setEnIntercambio(boolean e) {
+        enIntercambio = e;
     }
 }
