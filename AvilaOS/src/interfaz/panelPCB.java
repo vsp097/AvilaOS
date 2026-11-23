@@ -33,7 +33,7 @@ public class panelPCB extends javax.swing.JPanel {
         //para los datos del proceso
     public void mostrar(PCB p) {
         if (p == null) {
-            lblId.setText("Ningun proceso seleccionado");
+            lblId.setText("Ningun proceso en la CPU");
             lblNombre.setText("");
             lblComputador.setText("");
             lblEstado.setText("");
@@ -48,8 +48,9 @@ public class panelPCB extends javax.swing.JPanel {
         }
         lblId.setText("ID: " + p.getId());
         lblNombre.setText("Nombre: " + p.getname());
-        lblComputador.setText("Computador: " + p.getComputador());
-        lblEstado.setText("Estado: " + p.getstate());
+        //en esta linea va la operacion de E/S del proceso y sobre que archivo la hace
+        lblComputador.setText(p.getOperacion() == null ? "Sin E/S" : "E/S: " + p.textoOperacion());
+        lblEstado.setText("Estado: " + p.getstate().getEtiqueta());
         lblTipo.setText("Tipo: " + p.gettype());
         lblPC.setText("PC: " + p.getpc());
         lblPrioridad.setText("Prioridad: " + p.getPrioridad());
@@ -57,7 +58,7 @@ public class panelPCB extends javax.swing.JPanel {
         lblDeadline.setText("Deadline: " + p.getdeadline());
         lblTiempo.setText("Tiempo restante: " + p.getime());
         //el motivo solo se muestra si el proceso esta bloqueado
-        if (p.getstate() == EstadoProceso.Bloqueado) {
+        if (p.getstate() == EstadoProceso.Bloqueado || p.getstate() == EstadoProceso.BloqueadoSuspendido) {
             lblMotivo.setText("Motivo: " + p.getMotivo());
         } else {
             lblMotivo.setText("");
@@ -107,8 +108,8 @@ public class panelPCB extends javax.swing.JPanel {
 
         setLayout(new java.awt.BorderLayout());
 
-        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("En la CPU"));
-        jPanel1.setLayout(new java.awt.GridLayout(6, 2, 10, 0));
+        jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder("PCB"));
+        jPanel1.setLayout(new java.awt.GridLayout(11, 1, 10, 0));
 
         lblId.setText("ID:");
         jPanel1.add(lblId);
