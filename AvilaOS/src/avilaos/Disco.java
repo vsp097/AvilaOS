@@ -5,6 +5,7 @@
 package avilaos;
 
 import Data_Structures.Listas;
+import Data_Structures.PCB;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -213,6 +214,50 @@ public class Disco implements ClockListener {
         } finally {
             llave.release();
         }
+    }
+
+    //para las solicitudes que arma el sistema operativo (suspender, reactivar o una que vuelve a la cola)
+    //no cuentan para la espera de la carga inicial
+    public void encolarSinContar(SolicitudES s) {
+        llave.acquireUninterruptibly();
+        try {
+            cola.agregar(s);
+        } finally {
+            llave.release();
+        }
+    }
+
+    //dice si el proceso tiene una solicitud esperando en la cola (la que se esta atendiendo no cuenta)
+    public boolean estaEnCola(PCB p) {
+        llave.acquireUninterruptibly();
+        try {
+            return buscarEnCola(p) != null;
+        } finally {
+            llave.release();
+        }
+    }
+
+    //saca de la cola la solicitud que tiene el proceso esperando y la devuelve, null si no tiene
+    public SolicitudES retirar(PCB p) {
+        llave.acquireUninterruptibly();
+        try {
+            SolicitudES s = buscarEnCola(p);
+            if (s != null) {
+                cola.eliminar(s);
+            }
+            return s;
+        } finally {
+            llave.release();
+        }
+    }
+
+    private SolicitudES buscarEnCola(PCB p) {
+        for (int i = 0; i < cola.len(); i++) {
+            if (cola.retornar(i).getProceso() == p) {
+                return cola.retornar(i);
+            }
+        }
+        return null;
     }
 
     //el disco no atiende hasta que lleguen n solicitudes, para que la politica las vea todas juntas
