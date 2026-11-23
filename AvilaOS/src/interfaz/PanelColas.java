@@ -1,15 +1,14 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
  */
 package interfaz;
 
+//--- bloque a: imports ---
 import Data_Structures.EstadoProceso;
 import Data_Structures.PCB;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
@@ -20,56 +19,74 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListCellRenderer;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
+//--- fin del bloque a: imports ---
 
 /**
  *
  * @author andrea
  */
 //las colas del computador: una columna por cada uno de los siete estados
-public class PanelColas extends JPanel {
+public class PanelColas extends javax.swing.JPanel {
 
+    //--- bloque a: campos ---
     //para avisarle a la ventana cuando hacen clic en un proceso
     public interface SeleccionListener {
         void procesoElegido(PCB p);
     }
 
+    //un color por estado, en el mismo orden que el enum EstadoProceso
     private static final Color[] FONDOS = {
         new Color(108, 117, 125), new Color(42, 157, 143), new Color(38, 70, 83), new Color(214, 95, 60),
         new Color(87, 140, 190), new Color(150, 110, 180), new Color(90, 90, 90)
     };
 
     private EstadoProceso[] estados = EstadoProceso.values();
-    private JLabel[] titulos = new JLabel[estados.length];
-    private JList<String[]>[] listas = new JList[estados.length];
+    //los componentes del disenador puestos en arreglos, en el orden del enum
+    private JLabel[] titulos;
+    private JList<String[]>[] listas;
+    private JScrollPane[] scrolls;
     //los procesos que se estan mostrando en cada columna, en el mismo orden que la lista
     private PCB[][] mostrados = new PCB[estados.length][0];
     //lo ultimo que se dibujo en cada columna, para no redibujar si no cambio nada
     private String[] firmas = new String[estados.length];
     private SeleccionListener listener;
+    //--- fin del bloque a: campos ---
 
-    public PanelColas(SeleccionListener l) {
-        listener = l;
-        setLayout(new GridLayout(1, estados.length, 6, 0));
-        setBorder(BorderFactory.createTitledBorder("Colas del computador"));
+    /**
+     * Creates new form PanelColas
+     */
+    public PanelColas() {
+        initComponents();
+        //--- bloque b ---
+        titulos = new JLabel[]{lblNuevo, lblListo, lblEjecucion, lblBloqueado, lblListoSuspendido, lblBloqueadoSuspendido, lblTerminado};
+        listas = new JList[]{lstNuevo, lstListo, lstEjecucion, lstBloqueado, lstListoSuspendido, lstBloqueadoSuspendido, lstTerminado};
+        scrolls = new JScrollPane[]{scrNuevo, scrListo, scrEjecucion, scrBloqueado, scrListoSuspendido, scrBloqueadoSuspendido, scrTerminado};
         for (int i = 0; i < estados.length; i++) {
-            add(armarColumna(i));
+            prepararColumna(i);
         }
+        //--- fin del bloque b ---
     }
 
-    private JPanel armarColumna(final int i) {
-        JPanel columna = new JPanel(new BorderLayout());
-        titulos[i] = new JLabel(titulo(i, 0), SwingConstants.CENTER);
+    //--- bloque c ---
+    public PanelColas(SeleccionListener l) {
+        this();
+        listener = l;
+    }
+
+    public void setSeleccionListener(SeleccionListener l) {
+        listener = l;
+    }
+
+    //los colores de cada columna y el clic sobre un proceso
+    private void prepararColumna(final int i) {
         titulos[i].setOpaque(true);
         titulos[i].setBackground(FONDOS[i]);
         titulos[i].setForeground(Color.WHITE);
         titulos[i].setFont(titulos[i].getFont().deriveFont(Font.BOLD, 12f));
         titulos[i].setBorder(BorderFactory.createEmptyBorder(5, 4, 5, 4));
-        columna.add(titulos[i], BorderLayout.NORTH);
-
-        final JList<String[]> lista = new JList<>();
-        lista.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        titulos[i].setText(titulo(i, 0));
+        scrolls[i].setBorder(BorderFactory.createLineBorder(FONDOS[i]));
+        final JList<String[]> lista = listas[i];
         lista.setCellRenderer(new Celda());
         lista.addMouseListener(new MouseAdapter() {
             @Override
@@ -80,14 +97,6 @@ public class PanelColas extends JPanel {
                 }
             }
         });
-        listas[i] = lista;
-        JScrollPane scroll = new JScrollPane(lista);
-        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.setBorder(BorderFactory.createLineBorder(FONDOS[i]));
-        columna.add(scroll, BorderLayout.CENTER);
-        columna.setMinimumSize(new Dimension(110, 150));
-        columna.setPreferredSize(new Dimension(160, 210));
-        return columna;
     }
 
     private String titulo(int i, int cuantos) {
@@ -154,11 +163,199 @@ public class PanelColas extends JPanel {
                 boolean seleccionado, boolean foco) {
             nombre.setText(valor[0]);
             detalle.setText(valor[1]);
-            
             setBackground(seleccionado ? lista.getSelectionBackground() : Color.WHITE);
             nombre.setForeground(seleccionado ? lista.getSelectionForeground() : Color.BLACK);
             detalle.setForeground(seleccionado ? lista.getSelectionForeground() : new Color(95, 95, 95));
             return this;
         }
     }
+    //--- fin del bloque c ---
+
+    //--- diseno: esto lo genera el disenador de NetBeans ---
+    @SuppressWarnings("unchecked")
+    private void initComponents() {
+
+        pnlNuevo = new javax.swing.JPanel();
+        lblNuevo = new javax.swing.JLabel();
+        scrNuevo = new javax.swing.JScrollPane();
+        lstNuevo = new javax.swing.JList<>();
+        pnlListo = new javax.swing.JPanel();
+        lblListo = new javax.swing.JLabel();
+        scrListo = new javax.swing.JScrollPane();
+        lstListo = new javax.swing.JList<>();
+        pnlEjecucion = new javax.swing.JPanel();
+        lblEjecucion = new javax.swing.JLabel();
+        scrEjecucion = new javax.swing.JScrollPane();
+        lstEjecucion = new javax.swing.JList<>();
+        pnlBloqueado = new javax.swing.JPanel();
+        lblBloqueado = new javax.swing.JLabel();
+        scrBloqueado = new javax.swing.JScrollPane();
+        lstBloqueado = new javax.swing.JList<>();
+        pnlListoSuspendido = new javax.swing.JPanel();
+        lblListoSuspendido = new javax.swing.JLabel();
+        scrListoSuspendido = new javax.swing.JScrollPane();
+        lstListoSuspendido = new javax.swing.JList<>();
+        pnlBloqueadoSuspendido = new javax.swing.JPanel();
+        lblBloqueadoSuspendido = new javax.swing.JLabel();
+        scrBloqueadoSuspendido = new javax.swing.JScrollPane();
+        lstBloqueadoSuspendido = new javax.swing.JList<>();
+        pnlTerminado = new javax.swing.JPanel();
+        lblTerminado = new javax.swing.JLabel();
+        scrTerminado = new javax.swing.JScrollPane();
+        lstTerminado = new javax.swing.JList<>();
+
+        setBorder(javax.swing.BorderFactory.createTitledBorder("Colas del computador"));
+        setLayout(new java.awt.GridLayout(1, 7, 6, 0));
+
+        pnlNuevo.setMinimumSize(new java.awt.Dimension(110, 150));
+        pnlNuevo.setPreferredSize(new java.awt.Dimension(160, 210));
+        pnlNuevo.setLayout(new java.awt.BorderLayout());
+
+        lblNuevo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblNuevo.setText("Nuevo  [0]");
+        pnlNuevo.add(lblNuevo, java.awt.BorderLayout.PAGE_START);
+
+        scrNuevo.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        lstNuevo.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        scrNuevo.setViewportView(lstNuevo);
+
+        pnlNuevo.add(scrNuevo, java.awt.BorderLayout.CENTER);
+
+        add(pnlNuevo);
+
+        pnlListo.setMinimumSize(new java.awt.Dimension(110, 150));
+        pnlListo.setPreferredSize(new java.awt.Dimension(160, 210));
+        pnlListo.setLayout(new java.awt.BorderLayout());
+
+        lblListo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblListo.setText("Listo  [0]");
+        pnlListo.add(lblListo, java.awt.BorderLayout.PAGE_START);
+
+        scrListo.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        lstListo.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        scrListo.setViewportView(lstListo);
+
+        pnlListo.add(scrListo, java.awt.BorderLayout.CENTER);
+
+        add(pnlListo);
+
+        pnlEjecucion.setMinimumSize(new java.awt.Dimension(110, 150));
+        pnlEjecucion.setPreferredSize(new java.awt.Dimension(160, 210));
+        pnlEjecucion.setLayout(new java.awt.BorderLayout());
+
+        lblEjecucion.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblEjecucion.setText("En ejecucion (CPU)  [0]");
+        pnlEjecucion.add(lblEjecucion, java.awt.BorderLayout.PAGE_START);
+
+        scrEjecucion.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        lstEjecucion.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        scrEjecucion.setViewportView(lstEjecucion);
+
+        pnlEjecucion.add(scrEjecucion, java.awt.BorderLayout.CENTER);
+
+        add(pnlEjecucion);
+
+        pnlBloqueado.setMinimumSize(new java.awt.Dimension(110, 150));
+        pnlBloqueado.setPreferredSize(new java.awt.Dimension(160, 210));
+        pnlBloqueado.setLayout(new java.awt.BorderLayout());
+
+        lblBloqueado.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblBloqueado.setText("Bloqueado  [0]");
+        pnlBloqueado.add(lblBloqueado, java.awt.BorderLayout.PAGE_START);
+
+        scrBloqueado.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        lstBloqueado.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        scrBloqueado.setViewportView(lstBloqueado);
+
+        pnlBloqueado.add(scrBloqueado, java.awt.BorderLayout.CENTER);
+
+        add(pnlBloqueado);
+
+        pnlListoSuspendido.setMinimumSize(new java.awt.Dimension(110, 150));
+        pnlListoSuspendido.setPreferredSize(new java.awt.Dimension(160, 210));
+        pnlListoSuspendido.setLayout(new java.awt.BorderLayout());
+
+        lblListoSuspendido.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblListoSuspendido.setText("Listo/Suspendido  [0]");
+        pnlListoSuspendido.add(lblListoSuspendido, java.awt.BorderLayout.PAGE_START);
+
+        scrListoSuspendido.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        lstListoSuspendido.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        scrListoSuspendido.setViewportView(lstListoSuspendido);
+
+        pnlListoSuspendido.add(scrListoSuspendido, java.awt.BorderLayout.CENTER);
+
+        add(pnlListoSuspendido);
+
+        pnlBloqueadoSuspendido.setMinimumSize(new java.awt.Dimension(110, 150));
+        pnlBloqueadoSuspendido.setPreferredSize(new java.awt.Dimension(160, 210));
+        pnlBloqueadoSuspendido.setLayout(new java.awt.BorderLayout());
+
+        lblBloqueadoSuspendido.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblBloqueadoSuspendido.setText("Bloqueado/Suspendido  [0]");
+        pnlBloqueadoSuspendido.add(lblBloqueadoSuspendido, java.awt.BorderLayout.PAGE_START);
+
+        scrBloqueadoSuspendido.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        lstBloqueadoSuspendido.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        scrBloqueadoSuspendido.setViewportView(lstBloqueadoSuspendido);
+
+        pnlBloqueadoSuspendido.add(scrBloqueadoSuspendido, java.awt.BorderLayout.CENTER);
+
+        add(pnlBloqueadoSuspendido);
+
+        pnlTerminado.setMinimumSize(new java.awt.Dimension(110, 150));
+        pnlTerminado.setPreferredSize(new java.awt.Dimension(160, 210));
+        pnlTerminado.setLayout(new java.awt.BorderLayout());
+
+        lblTerminado.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lblTerminado.setText("Terminado  [0]");
+        pnlTerminado.add(lblTerminado, java.awt.BorderLayout.PAGE_START);
+
+        scrTerminado.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        lstTerminado.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        scrTerminado.setViewportView(lstTerminado);
+
+        pnlTerminado.add(scrTerminado, java.awt.BorderLayout.CENTER);
+
+        add(pnlTerminado);
+    }
+
+    // Variables declaration - do not modify
+    private javax.swing.JLabel lblBloqueado;
+    private javax.swing.JLabel lblBloqueadoSuspendido;
+    private javax.swing.JLabel lblEjecucion;
+    private javax.swing.JLabel lblListo;
+    private javax.swing.JLabel lblListoSuspendido;
+    private javax.swing.JLabel lblNuevo;
+    private javax.swing.JLabel lblTerminado;
+    private javax.swing.JList<String[]> lstBloqueado;
+    private javax.swing.JList<String[]> lstBloqueadoSuspendido;
+    private javax.swing.JList<String[]> lstEjecucion;
+    private javax.swing.JList<String[]> lstListo;
+    private javax.swing.JList<String[]> lstListoSuspendido;
+    private javax.swing.JList<String[]> lstNuevo;
+    private javax.swing.JList<String[]> lstTerminado;
+    private javax.swing.JPanel pnlBloqueado;
+    private javax.swing.JPanel pnlBloqueadoSuspendido;
+    private javax.swing.JPanel pnlEjecucion;
+    private javax.swing.JPanel pnlListo;
+    private javax.swing.JPanel pnlListoSuspendido;
+    private javax.swing.JPanel pnlNuevo;
+    private javax.swing.JPanel pnlTerminado;
+    private javax.swing.JScrollPane scrBloqueado;
+    private javax.swing.JScrollPane scrBloqueadoSuspendido;
+    private javax.swing.JScrollPane scrEjecucion;
+    private javax.swing.JScrollPane scrListo;
+    private javax.swing.JScrollPane scrListoSuspendido;
+    private javax.swing.JScrollPane scrNuevo;
+    private javax.swing.JScrollPane scrTerminado;
+    // End of variables declaration
+    //--- fin del diseno ---
 }
