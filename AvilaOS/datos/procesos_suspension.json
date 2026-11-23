@@ -1,0 +1,21 @@
+{
+  "globalConfig": {
+    "cycleDurationMs": 300,
+    "swapSizeBlocks": 100,
+    "initialDiskPolicy": "FIFO"
+  },
+  "computer": {
+    "ramCapacity": 64,
+    "policy": "FCFS",
+    "quantum": 0
+  },
+  "processes": [
+    { "name": "P1", "memory": 16, "deadline": 0, "instructions": 3, "targetPath": "/usuarios/video.mp4", "operation": "READ", "fileSizeBlocks": 0 },
+    { "name": "P2", "memory": 16, "deadline": 0, "instructions": 3, "targetPath": "/sistema/boot.bin", "operation": "READ", "fileSizeBlocks": 0 },
+    { "name": "P3", "memory": 16, "deadline": 0, "instructions": 3, "targetPath": "/usuarios/data.csv", "operation": "READ", "fileSizeBlocks": 0 },
+    { "name": "P4", "memory": 16, "deadline": 0, "instructions": 3, "targetPath": "/sistema/config.sys", "operation": "READ", "fileSizeBlocks": 0 },
+    { "name": "P5", "memory": 16, "deadline": 0, "instructions": 4, "operation": "NONE" },
+    { "name": "P6", "memory": 24, "deadline": 0, "instructions": 4, "operation": "NONE" },
+    { "name": "P7", "memory": 16, "deadline": 0, "instructions": 3, "targetPath": "/sistema/core.dll", "operation": "READ", "fileSizeBlocks": 0 }
+  ]
+}
