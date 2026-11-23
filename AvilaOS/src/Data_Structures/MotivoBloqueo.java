@@ -11,7 +11,9 @@ package Data_Structures;
 //por que esta bloqueado un proceso
 public enum MotivoBloqueo {
     NINGUNO(""),
-    ES_DISCO("E/S de disco");
+    ES_DISCO("E/S de disco"),
+    //el mediano plazo lo eligio y el disco lo esta copiando al area de intercambio
+    SUSPENSION("pasando al area de intercambio");
 
     private final String etiqueta;
 

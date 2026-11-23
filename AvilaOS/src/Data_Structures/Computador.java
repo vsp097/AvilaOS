@@ -9,6 +9,9 @@ import avilaos.Planificador;
 import avilaos.LogEventos;
 import avilaos.Metricas;
 import avilaos.ServicioES;
+import avilaos.ServicioIntercambio;
+import avilaos.PlanificadorMedianoPlazo;
+import avilaos.MedianoPlazoAntiguedad;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -41,6 +44,25 @@ public class Computador implements ClockListener{
         servicioES = s;
     }
 
+    //----- mediano plazo -----
+    //el sistema operativo, que arma las solicitudes SUSPENDER y REACTIVAR
+    protected ServicioIntercambio intercambio;
+    protected PlanificadorMedianoPlazo medianoPlazo = new MedianoPlazoAntiguedad();
+    //RAM que se va a liberar cuando el disco termine las suspensiones que ya se pidieron
+    protected float ramEnCamino = 0;
+    //true cuando un proceso termino y solto su RAM, asi el mediano plazo revisa a los listos/suspendidos
+    protected boolean seLiberoMemoria = false;
+    //para no repetir en el log el mismo aviso en cada ciclo
+    private String ultimoAviso = "";
+
+    public void setServicioIntercambio(ServicioIntercambio s) {
+        intercambio = s;
+    }
+
+    public void setMedianoPlazo(PlanificadorMedianoPlazo m) {
+        medianoPlazo = m;
+    }
+
         //las metricas del sistema (una sola para todos) y el numero de este computador (0 es el primero)
     protected Metricas metricas;
     protected int indice = 0;
@@ -58,6 +80,10 @@ public class Computador implements ClockListener{
         datatype = null;
     }
     
+    public long getCiclo() {
+        return ciclo;
+    }
+
     public PCB getEnEjecucion() {
         return enEjecucion;
     }
@@ -86,6 +112,8 @@ public class Computador implements ClockListener{
     //el cuerpo sin candado, para poder llamarlo desde onTick que ya lo tiene tomado
     private void admitirInterno() {
         Cola<PCB> siguen = new Cola<>();
+        //solo el primero que no cabe le pide espacio al mediano plazo, los demas esperan su turno
+        boolean pidioEspacio = false;
         PCB p = Nuevos.Desencolar();
         while (p != null) {
             if (p.getmem() <= RAM) {
@@ -94,11 +122,165 @@ public class Computador implements ClockListener{
                 Listos.Encolar(p);
                 registrar("Proceso " + p.getname() + " es admitido y pasa a listos");
             } else {
+                if (!pidioEspacio) {
+                    pidioEspacio = true;
+                    hacerEspacio(p);
+                }
                 siguen.Encolar(p);
             }
             p = Nuevos.Desencolar();
         }
         moverTodos(siguen, Nuevos);
+    }
+
+    //el planificador a mediano plazo suspende bloqueados hasta que el nuevo quepa
+    //la RAM se libera cuando el disco termina de escribirlos en el area de intercambio
+    private void hacerEspacio(PCB nuevo) {
+        if (intercambio == null) {
+            return;
+        }
+        float falta = nuevo.getmem() - RAM - ramEnCamino;
+        if (falta <= 0) {
+            //ya hay suspensiones en camino que le van a dejar el espacio
+            return;
+        }
+        Cola<PCB> candidatos = candidatosASuspender();
+        float posible = 0;
+        for (int i = 0; i < candidatos.len(); i++) {
+            posible += candidatos.ver(i).getmem();
+        }
+        if (posible < falta) {
+            //no se suspende a nadie si igual no va a caber
+            avisarUnaVez("No hay procesos bloqueados que se puedan suspender para admitir a " + nuevo.getname()
+                    + " (necesita " + falta + " MB mas)");
+            return;
+        }
+        while (falta > 0) {
+            PCB v = medianoPlazo.elegirParaSuspender(candidatos);
+            if (v == null) {
+                return;
+            }
+            candidatos.eliminar(v);
+            String error = intercambio.suspender(v, ciclo);
+            if (error != null) {
+                avisarUnaVez("No se puede suspender a " + v.getname() + " para admitir a " + nuevo.getname() + ": " + error);
+                return;
+            }
+            v.setMotivo(MotivoBloqueo.SUSPENSION);
+            v.setEnIntercambio(true);
+            ramEnCamino += v.getmem();
+            falta -= v.getmem();
+            registrar("Se suspende al proceso " + v.getname() + " para admitir a " + nuevo.getname()
+                    + " (" + v.getBloquesSwap() + " bloques al area de intercambio)");
+        }
+    }
+
+    //los bloqueados cuya solicitud todavia espera en la cola del disco
+    //el que el disco esta atendiendo no se toca, asi un proceso nunca tiene dos solicitudes en el disco
+    private Cola<PCB> candidatosASuspender() {
+        Cola<PCB> candidatos = new Cola<>();
+        for (int i = 0; i < Bloqueados.len(); i++) {
+            PCB p = Bloqueados.ver(i);
+            if (p.getMotivo() == MotivoBloqueo.ES_DISCO && intercambio.puedeSuspender(p)) {
+                candidatos.Encolar(p);
+            }
+        }
+        return candidatos;
+    }
+
+    //cuando se libera RAM (un proceso termino), los listos/suspendidos van antes que los nuevos:
+    //ya fueron admitidos una vez y si no se les da prioridad se pueden quedar afuera para siempre
+    //sin RAM liberada solo vuelven si no hay nuevos esperando, asi no le quitan el espacio al que provoco la suspension
+    private void revisarReactivacion() {
+        boolean puede = seLiberoMemoria || Nuevos.estaVacia();
+        seLiberoMemoria = false;
+        if (intercambio == null || !puede || ListosSuspendidos.estaVacia()) {
+            return;
+        }
+        while (true) {
+            Cola<PCB> caben = new Cola<>();
+            for (int i = 0; i < ListosSuspendidos.len(); i++) {
+                PCB p = ListosSuspendidos.ver(i);
+                if (!p.getEnIntercambio() && p.getmem() <= RAM) {
+                    caben.Encolar(p);
+                }
+            }
+            PCB p = medianoPlazo.elegirParaReactivar(caben);
+            if (p == null) {
+                return;
+            }
+            //la RAM se aparta de una vez para que ningun nuevo la tome mientras el disco lee el area de intercambio
+            useRam(p.getmem());
+            p.setEnIntercambio(true);
+            intercambio.reactivar(p, ciclo);
+            registrar("Se reactiva al proceso " + p.getname() + ": hay " + (RAM + p.getmem()) + " MB libres");
+        }
+    }
+
+    //el disco termino de escribir al proceso en el area de intercambio: suelta su RAM
+    public void suspensionLista(PCB p) {
+        tomar();
+        try {
+            if (!Bloqueados.eliminar(p)) {
+                return;
+            }
+            RAM += p.getmem();
+            ramEnCamino = Math.max(0, ramEnCamino - p.getmem());
+            p.setEnIntercambio(false);
+            p.setMotivo(MotivoBloqueo.ES_DISCO);
+            p.setstate(EstadoProceso.BloqueadoSuspendido);
+            BloqueadosSuspendidos.Encolar(p);
+            if (metricas != null) {
+                metricas.registrarSuspension();
+            }
+            registrar("Proceso " + p.getname() + " queda bloqueado/suspendido en los bloques " + p.getPrimerSwap()
+                    + " a " + (p.getPrimerSwap() + p.getBloquesSwap() - 1) + " y libera " + p.getmem() + " MB");
+        } finally {
+            soltar();
+        }
+    }
+
+    //el disco termino de leer al proceso del area de intercambio: ya tiene su RAM y pasa a listos
+    public void reactivacionLista(PCB p) {
+        tomar();
+        try {
+            if (!ListosSuspendidos.eliminar(p)) {
+                return;
+            }
+            p.setEnIntercambio(false);
+            p.setPrimerSwap(-1);
+            p.setBloquesSwap(0);
+            if (metricas != null) {
+                metricas.registrarReactivacion();
+            }
+            registrar("Proceso " + p.getname() + " vuelve a la RAM y pasa a listos");
+            if (p.getTuvoDeadline() && p.getdeadline() == 0) {
+                terminar(p, "se le acabo el deadline");
+            } else {
+                p.setstate(EstadoProceso.Listo);
+                Listos.Encolar(p);
+            }
+        } finally {
+            soltar();
+        }
+    }
+
+    //termina un proceso que esta en el area de intercambio: suelta sus bloques y no tiene RAM que devolver
+    private void terminarSuspendido(PCB p, String motivo) {
+        if (intercambio != null) {
+            intercambio.liberarSwap(p);
+        }
+        p.setstate(EstadoProceso.Terminado);
+        Terminados.Encolar(p);
+        registrar("Proceso " + p.getname() + " termina estando suspendido: " + motivo);
+        anotarTermino(p);
+    }
+
+    private void avisarUnaVez(String mensaje) {
+        if (!mensaje.equals(ultimoAviso)) {
+            ultimoAviso = mensaje;
+            registrar(mensaje);
+        }
     }
 
     
@@ -257,6 +439,7 @@ public class Computador implements ClockListener{
         tomar();
         try {
             ciclo = cycle;
+            revisarReactivacion();
             admitirInterno();
             if (enEjecucion != null && planificador.debeSacar(enEjecucion, Listos, ciclosUsados)) {
                 expropiese();
@@ -291,6 +474,21 @@ public class Computador implements ClockListener{
     public void despertar(PCB p) {
         tomar();
         try {
+            //si estaba suspendido su evento ya ocurrio: pasa a listo/suspendido, sigue en el area de intercambio
+            if (BloqueadosSuspendidos.eliminar(p)) {
+                p.setMotivo(MotivoBloqueo.NINGUNO);
+                registrar("Proceso " + p.getname() + " termina su E/S (" + p.textoOperacion() + ") estando suspendido");
+                if (p.getTuvoDeadline() && p.getdeadline() == 0) {
+                    terminarSuspendido(p, "se le acabo el deadline");
+                } else if (p.getime() <= 0) {
+                    terminarSuspendido(p, "termino sus instruciones");
+                } else {
+                    p.setstate(EstadoProceso.ListoSuspendido);
+                    ListosSuspendidos.Encolar(p);
+                    registrar("Proceso " + p.getname() + " pasa a listo/suspendido");
+                }
+                return;
+            }
             if (!Bloqueados.eliminar(p)) {
                 return;
             }
@@ -313,6 +511,11 @@ public class Computador implements ClockListener{
     public void fallar(PCB p, String motivo) {
         tomar();
         try {
+            if (BloqueadosSuspendidos.eliminar(p)) {
+                p.setMotivo(MotivoBloqueo.NINGUNO);
+                terminarSuspendido(p, "fallo su E/S: " + motivo);
+                return;
+            }
             if (!Bloqueados.eliminar(p)) {
                 return;
             }
@@ -388,8 +591,13 @@ public class Computador implements ClockListener{
         p.setstate(EstadoProceso.Terminado);
         Terminados.Encolar(p);
         RAM += p.getmem();
+        seLiberoMemoria = true;
         registrar("Proceso " + p.getname() + " termina: " + motivo);
-        //si tenia deadline y llego a 0, se le acabo el tiempo y no cuenta como completado
+        anotarTermino(p);
+    }
+
+    //si tenia deadline y llego a 0, se le acabo el tiempo y no cuenta como completado
+    private void anotarTermino(PCB p) {
         boolean vencio = p.getTuvoDeadline() && p.getdeadline() == 0;
         if (metricas != null) {
             if (!vencio) {
@@ -425,6 +633,22 @@ public class Computador implements ClockListener{
         for (int i = 0; i < Bloqueados.len(); i++) {
             bajarDeadline(Bloqueados.ver(i));
         }
+        for (int i = 0; i < BloqueadosSuspendidos.len(); i++) {
+            bajarDeadline(BloqueadosSuspendidos.ver(i));
+        }
+        //un listo/suspendido que se queda sin deadline termina ahi mismo y suelta el area de intercambio,
+        //salvo que ya este volviendo a la RAM: ese se revisa cuando llegue a listos
+        siguen = new Cola<>();
+        p = ListosSuspendidos.Desencolar();
+        while (p != null) {
+            if (bajarDeadline(p) && !p.getEnIntercambio()) {
+                terminarSuspendido(p, "se le acabo el deadline");
+            } else {
+                siguen.Encolar(p);
+            }
+            p = ListosSuspendidos.Desencolar();
+        }
+        moverTodos(siguen, ListosSuspendidos);
     }
 
     //le baja 1 al deadline y dice si llego a 0, si no tenia deadline (0) no hace nada

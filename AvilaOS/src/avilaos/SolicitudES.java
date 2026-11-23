@@ -24,6 +24,8 @@ public class SolicitudES {
     private long cicloInicio = -1;
     //color que se le reservo al archivo cuando la solicitud es de CREAR
     private int color = -1;
+    //en una SUSPENDER: la solicitud de archivo que se saco de la cola y vuelve a entrar cuando termine
+    private SolicitudES pendiente;
 
     public SolicitudES(PCB proceso, TipoOperacionES operacion, String ruta, int[] recorrido, long cicloLlegada) {
         this.proceso = proceso;
@@ -89,5 +91,13 @@ public class SolicitudES {
 
     public void setCicloInicio(long c) {
         cicloInicio = c;
+    }
+
+    public SolicitudES getPendiente() {
+        return pendiente;
+    }
+
+    public void setPendiente(SolicitudES s) {
+        pendiente = s;
     }
 }

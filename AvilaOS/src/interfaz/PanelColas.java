@@ -134,6 +134,8 @@ public class PanelColas extends javax.swing.JPanel {
             case BloqueadoSuspendido:
                 //aqui va corto para que quepa; la ruta completa sale en el PCB al hacer clic
                 return p.getMotivo() + ": " + p.getOperacion();
+            case ListoSuspendido:
+                return p.getEnIntercambio() ? "volviendo a la RAM" : "en swap desde el bloque " + p.getPrimerSwap();
             case Terminado:
                 return "PC=" + p.getpc();
             default:

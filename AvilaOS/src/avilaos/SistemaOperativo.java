@@ -16,7 +16,7 @@ import java.io.IOException;
  */
 //aqui vive la logica de AvilaOS: arma el computador, el disco y el sistema de archivos y los conecta
 //la ventana solo llama a esta clase y mira, no decide nada
-public class SistemaOperativo implements ServicioES, OyenteDisco {
+public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioIntercambio {
 
     private Computador computador;
     private Disco disco;
@@ -60,6 +60,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
         computador.setLog(log);
         computador.setMetricas(metricas, 0);
         computador.setServicioES(this);
+        computador.setServicioIntercambio(this);
         computador.setPlanificador(SelectorPolitica.crear(ConfigProcesos.leerPolitica(cp.computer.policy),
                 Math.max(1, cp.computer.quantum)));
 
@@ -167,6 +168,11 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
         return reloj.getCiclo();
     }
 
+    //el ciclo que va el computador; es el mismo del reloj, pero tambien sirve cuando los ciclos se dan a mano
+    private int ciclo() {
+        return (int) Math.max(reloj.getCiclo(), computador.getCiclo());
+    }
+
     public long getDuracionCiclo() {
         return reloj.getcduration();
     }
@@ -180,7 +186,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
     public void setModoUsuario(ModoUsuario m, String nombre) {
         modo = m;
         usuario = m == ModoUsuario.ADMINISTRADOR ? "admin" : nombre;
-        log.registrar((int) reloj.getCiclo(), "Modo " + modo + " (" + usuario + ")");
+        log.registrar(ciclo(), "Modo " + modo + " (" + usuario + ")");
     }
 
     public ModoUsuario getModoUsuario() {
@@ -210,7 +216,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
                 archivos.soltar();
             }
             if (motivo != null) {
-                log.registrar((int) reloj.getCiclo(), "Se rechaza " + d.operacion + " " + d.ruta + " pedido por "
+                log.registrar(ciclo(), "Se rechaza " + d.operacion + " " + d.ruta + " pedido por "
                         + usuario + ": " + motivo);
                 throw new IllegalArgumentException("Operacion rechazada: " + motivo);
             }
@@ -367,6 +373,20 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
     @Override
     public void solicitudAtendida(SolicitudES s) {
         PCB p = s.getProceso();
+        //las del area de intercambio no tocan el sistema de archivos
+        if (s.getOperacion() == TipoOperacionES.SUSPENDER) {
+            computador.suspensionLista(p);
+            //la solicitud de archivo que se habia sacado vuelve a la cola y sigue su curso
+            if (s.getPendiente() != null) {
+                disco.encolarSinContar(s.getPendiente());
+            }
+            return;
+        }
+        if (s.getOperacion() == TipoOperacionES.REACTIVAR) {
+            liberarSwap(p);
+            computador.reactivacionLista(p);
+            return;
+        }
         String error;
         archivos.tomar();
         try {
@@ -374,7 +394,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
         } finally {
             archivos.soltar();
         }
-        int ciclo = (int) reloj.getCiclo();
+        int ciclo = ciclo();
         if (error == null) {
             log.registrar(ciclo, "El disco termina " + s.getOperacion() + " " + s.getRuta() + " de " + p.getname());
             computador.despertar(p);
@@ -442,10 +462,64 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
                     liberados += a.getBloques();
                 }
                 archivos.quitar(nodo);
-                log.registrar((int) reloj.getCiclo(), "Se elimina " + ruta + " y se liberan " + liberados + " bloques");
+                log.registrar(ciclo(), "Se elimina " + ruta + " y se liberan " + liberados + " bloques");
                 return null;
             default:
+                //SUSPENDER y REACTIVAR se aplican antes, en solicitudAtendida
                 return null;
+        }
+    }
+
+    //----- el area de intercambio (lo pide el planificador a mediano plazo del computador) -----
+
+    //una unidad de memoria es un bloque, redondeando hacia arriba
+    public static int bloquesPara(float memoria) {
+        return (int) Math.ceil(memoria);
+    }
+
+    @Override
+    public boolean puedeSuspender(PCB p) {
+        return disco.estaEnCola(p);
+    }
+
+    @Override
+    public String suspender(PCB p, long ciclo) {
+        int n = bloquesPara(p.getmem());
+        int libres = disco.getLibresSwap();
+        if (n > libres) {
+            return "no hay espacio en el area de intercambio (pide " + n + " bloques y quedan " + libres + ")";
+        }
+        //primero se saca la solicitud de archivo, asi el proceso nunca tiene dos solicitudes en la cola
+        SolicitudES archivo = disco.retirar(p);
+        if (archivo == null) {
+            return "el disco ya esta atendiendo su solicitud";
+        }
+        int[] swap = disco.asignarSwap(n, p.getname());
+        if (swap == null) {
+            disco.encolarSinContar(archivo);
+            return "no hay espacio en el area de intercambio";
+        }
+        p.setPrimerSwap(swap[0]);
+        p.setBloquesSwap(n);
+        //escribir el proceso cuesta un ciclo por cada bloque del area de intercambio
+        SolicitudES s = new SolicitudES(p, TipoOperacionES.SUSPENDER, "area de intercambio", swap, ciclo);
+        s.setPendiente(archivo);
+        disco.encolarSinContar(s);
+        return null;
+    }
+
+    @Override
+    public void reactivar(PCB p, long ciclo) {
+        //leer el proceso recorre su cadena del area de intercambio
+        int[] recorrido = disco.cadena(p.getPrimerSwap());
+        disco.encolarSinContar(new SolicitudES(p, TipoOperacionES.REACTIVAR, "area de intercambio", recorrido, ciclo));
+    }
+
+    @Override
+    public void liberarSwap(PCB p) {
+        if (p.getPrimerSwap() >= 0) {
+            disco.liberar(p.getPrimerSwap());
+            p.setPrimerSwap(-1);
         }
     }
 
@@ -494,7 +568,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco {
 
     public void guardarArchivos(String ruta) throws IOException {
         ArchivosJSON.guardarArchivos(exportarArchivos(), ruta);
-        log.registrar((int) reloj.getCiclo(), "Se guarda el sistema de archivos en " + ruta);
+        log.registrar(ciclo(), "Se guarda el sistema de archivos en " + ruta);
     }
 
     //----- copias para la ventana -----

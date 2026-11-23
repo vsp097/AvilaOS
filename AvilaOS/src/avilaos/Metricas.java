@@ -47,6 +47,10 @@ public class Metricas {
     private int inicioSistema = 0;
     private int cantidadSistema = 0;
 
+    //suspension: cuantas veces el disco escribio o trajo un proceso del area de intercambio
+    private long suspensiones = 0;
+    private long reactivaciones = 0;
+
     //datos por buffer
     private long[] producidos = new long[MAX_BUFFERS];
     private long[] consumidos = new long[MAX_BUFFERS];
@@ -188,6 +192,44 @@ public class Metricas {
         try {
             sumaBloqueo[b] += ciclosBloqueado;
             cantidadBloqueo[b]++;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //cuando el disco termina de escribir un proceso en el area de intercambio
+    public void registrarSuspension() {
+        mutex.acquireUninterruptibly();
+        try {
+            suspensiones++;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //cuando el disco termina de traer un proceso de vuelta a la RAM
+    public void registrarReactivacion() {
+        mutex.acquireUninterruptibly();
+        try {
+            reactivaciones++;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    public long getSuspensiones() {
+        mutex.acquireUninterruptibly();
+        try {
+            return suspensiones;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    public long getReactivaciones() {
+        mutex.acquireUninterruptibly();
+        try {
+            return reactivaciones;
         } finally {
             mutex.release();
         }
