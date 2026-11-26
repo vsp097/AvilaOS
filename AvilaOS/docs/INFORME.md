@@ -35,7 +35,7 @@ AvilaOS separa el **hardware simulado**, el **sistema operativo** y la **interfa
 | `SistemaOperativo` | Conecta todo. Implementa `ServicioES` (el computador le pide la E/S), `OyenteDisco` (el disco le avisa que termino) y `ServicioIntercambio` (el mediano plazo le pide suspender y reactivar). | `crearProceso`, `revisarOperacion`, `solicitar`, `solicitudAtendida`, `aplicar`, `suspender`, `reactivar`, `guardarArchivos` |
 | `SistemaArchivos` | Arbol de directorios y archivos con CRUD y permisos. | `buscar`, `crear`, `quitar`, `renombrar`, `revisarPermiso` |
 | `NodoArchivo` | Un directorio o archivo: nombre, dueño, permiso, primer bloque, cantidad de bloques, hijos. | `buscarHijo`, `agregarHijo`, `getRuta` |
-| `DiscoFIFO`, `DiscoSSTF`, `DiscoSCAN`, `DiscoCSCAN` | Las cuatro politicas de disco. Reciben la cola, la posicion y direccion del cabezal y devuelven una `DecisionDisco` (que solicitud atender, o ir a un extremo). | `decidir` |
+| `DiscoFIFO`, `DiscoSSTF`, `DiscoSCAN`, `DiscoCSCAN`, `DiscoLOOK`, `DiscoCLOOK` | Las seis politicas de disco (las cuatro pedidas mas LOOK y C-LOOK). Reciben la cola, la posicion y direccion del cabezal y devuelven una `DecisionDisco` (que solicitud atender, o ir a un extremo). | `decidir` |
 | `MedianoPlazoAntiguedad` | Criterio del planificador a mediano plazo (ver seccion 4). | `elegirParaSuspender`, `elegirParaReactivar` |
 | `ArchivosJSON`, `ConfigArchivos`, `ConfigProcesos` | Carga y validacion de los dos JSON y guardado del sistema de archivos. | `cargarArchivos`, `cargarProcesos`, `guardarArchivos`, `validar` |
 | `Metricas` | Metricas del Proyecto 1 para un solo computador, mas suspensiones, reactivaciones y el historial del desplazamiento del cabezal para el grafico. | `registrarCiclo`, `registrarSuspension`, `registrarDisco` |
@@ -48,7 +48,7 @@ AvilaOS separa el **hardware simulado**, el **sistema operativo** y la **interfa
 1. El usuario llena `FormularioES`. `Validaciones` revisa tipos y rangos; `SistemaOperativo.crearProceso` revisa que la ruta exista y los permisos. Si algo falla se explica en la ventana y la simulacion sigue.
 2. El proceso entra a **Nuevo**; cuando hay RAM pasa a **Listo**.
 3. Cuando obtiene la CPU, su primera instruccion se ejecuta en modo SO: `Computador.ejecutar` llama a `ServicioES.solicitar`, que arma la `SolicitudES` con el recorrido de bloques y la encola en el disco. El proceso pasa a **Bloqueado** (motivo: E/S de disco).
-4. En cada ciclo el disco le pregunta a la politica activa que sigue, mueve el cabezal (N posiciones por ciclo) o lee/escribe un bloque (1 ciclo por bloque).
+4. En cada ciclo el disco le pregunta a la politica activa que sigue, mueve el cabezal (N posiciones por ciclo) o lee/escribe un bloque (1 ciclo por bloque). Con la transferencia `FIXED` (por defecto) el cabezal va al primer bloque del archivo y ahi transfiere sus N bloques en N ciclos; con `CHAIN` recorre la cadena bloque por bloque. Se elige con `transferMode` en `diskConfig`.
 5. Al terminar, `OyenteDisco.solicitudAtendida` aplica el cambio en el sistema de archivos y despierta al proceso, que pasa a **Listo**.
 
 ## 3. Enums e interfaces (Diego)
@@ -59,7 +59,8 @@ AvilaOS separa el **hardware simulado**, el **sistema operativo** y la **interfa
 |---|---|---|
 | `EstadoProceso` | Nuevo, Listo, Ejecucion, Bloqueado, ListoSuspendido, BloqueadoSuspendido, Terminado | Modelo de siete estados. |
 | `TipoOperacionES` | CREAR, LEER, ACTUALIZAR, ELIMINAR, SUSPENDER, REACTIVAR | Operacion de cada solicitud de E/S. |
-| `PoliticaDisco` | FIFO, SSTF, SCAN, C_SCAN | Politica de planificacion de disco. |
+| `PoliticaDisco` | FIFO, SSTF, SCAN, C_SCAN, LOOK, C_LOOK | Politica de planificacion de disco. |
+| `ModoTransferencia` | FIJO, CADENA | Si el cabezal se queda en el primer bloque mientras transfiere (FIXED, por defecto) o recorre la cadena del archivo (CHAIN). |
 | `ModoUsuario` | ADMINISTRADOR, USUARIO | Modo de uso. |
 | `MotivoBloqueo` | NINGUNO, ES_DISCO, SUSPENSION | Por que esta bloqueado un proceso (se muestra en las colas y el PCB). |
 | `DireccionCabezal` | ARRIBA, ABAJO | Direccion del cabezal. |
@@ -73,7 +74,7 @@ AvilaOS separa el **hardware simulado**, el **sistema operativo** y la **interfa
 | Interfaz | La implementan | Para que |
 |---|---|---|
 | `ClockListener` | `Computador`, `Disco` | Todo lo que avanza con el reloj. |
-| `PlanificadorDisco` | `DiscoFIFO`, `DiscoSSTF`, `DiscoSCAN`, `DiscoCSCAN` | Agregar una politica nueva (LOOK, por ejemplo) es crear una clase y agregarla al enum y a `SelectorPoliticaDisco`; `Disco` no cambia. |
+| `PlanificadorDisco` | `DiscoFIFO`, `DiscoSSTF`, `DiscoSCAN`, `DiscoCSCAN`, `DiscoLOOK`, `DiscoCLOOK` | Agregar una politica nueva es crear una clase y agregarla al enum y a `SelectorPoliticaDisco`; `Disco` no cambia. Asi se agregaron LOOK y C-LOOK. |
 | `PlanificadorMedianoPlazo` | `MedianoPlazoAntiguedad` | Criterio para escoger a quien suspender y a quien reactivar. |
 | `ServicioES` | `SistemaOperativo` | El computador le pide la E/S al sistema operativo sin conocerlo. |
 | `OyenteDisco` | `SistemaOperativo` | El disco avisa que termino sin conocer al sistema operativo. |
@@ -90,7 +91,7 @@ AvilaOS separa el **hardware simulado**, el **sistema operativo** y la **interfa
 
 ## 5. Conclusiones (Diego)
 
-Numeros reales de las pruebas por consola (`pruebas.PruebaDisco` y `pruebas.PruebaSuspension`).
+Numeros reales de las pruebas por consola (`pruebas.PruebaDisco`, `pruebas.PruebaEnunciado` y `pruebas.PruebaSuspension`).
 
 ### 5.1 Ejemplo del anexo (cabezal en 50, 1 posicion por ciclo)
 
@@ -100,8 +101,10 @@ Numeros reales de las pruebas por consola (`pruebas.PruebaDisco` y `pruebas.Prue
 | SSTF | 43, 24, 17, 16, 82, 140, 190 | 208 |
 | SCAN | 82, 140, 190, (199), 43, 24, 17, 16 | 332 |
 | C-SCAN | 82, 140, 190, (199, salta al 0), 16, 17, 24, 43 | 192 (sin contar el salto) |
+| LOOK | 82, 140, 190, 43, 24, 17, 16 | 314 |
+| C-LOOK | 82, 140, 190, 16, 17, 24, 43 | 167 (sin contar el salto) |
 
-Los cuatro coinciden con el anexo del enunciado.
+Los cuatro primeros coinciden con el anexo del enunciado. LOOK y C-LOOK (extra) se dan la vuelta en la ultima solicitud en vez de llegar al bloque 199, por eso recorren menos que SCAN y C-SCAN.
 
 ### 5.2 Casos P1 a P4 con el sistema completo (8 procesos de E/S, cabezal a 5 posiciones por ciclo)
 
@@ -116,20 +119,23 @@ Los cuatro coinciden con el anexo del enunciado.
 - **SSTF** baja mucho el desplazamiento (236) y la espera (24.4), porque siempre va a la mas cercana. Su problema es la inanicion: si siguen llegando solicitudes cerca del cabezal, una lejana (aqui el 180) puede quedarse esperando mucho.
 - **SCAN** recorre un poco mas que SSTF (337) porque llega hasta el bloque 199 antes de regresar, aunque no haya nada ahi, pero ninguna solicitud espera mas de dos barridos: no hay inanicion.
 - **C-SCAN** dio el menor desplazamiento (183) y la menor espera (22.0) en este caso, porque despues del 180 salta al 0 sin contar el regreso y atiende 11 y 34 de subida. Ademas el tiempo de espera es mas parejo que en SCAN: los bloques del principio no tienen que esperar a que el cabezal baje todo el disco.
+- **Con los JSON del enunciado tal cual** (`datos/enunciado_*.json`, archivos de varios bloques y `mbr.bin` en el bloque 0), `pruebas.PruebaEnunciado` da exactamente los cuatro ordenes de las tablas P1 a P4 con la transferencia `FIXED`. Con `CHAIN` el cabezal termina al final de cada archivo: despues de leer `core.dll` (bloques 64 a 94) queda en el 94, y SSTF va primero al 95 en vez de al 34. Las dos formas son validas; `FIXED` es la que usa el enunciado para sus casos.
 - En resumen: para estas cargas, **C-SCAN y SSTF** son las mejores en desplazamiento y espera; **SCAN y C-SCAN** son las que evitan la inanicion. FIFO solo sirve como referencia.
 
 ### 5.3 Efecto de la suspension (`datos/procesos_suspension.json`: RAM de 64 MB, 7 procesos que en total piden 120 MB, area de intercambio de 100 bloques)
 
 | Politica | Suspensiones | Reactivaciones | Desplazamiento | Espera promedio | Ciclos | Terminados |
 |---|---|---|---|---|---|---|
-| FIFO | 3 | 3 | 1093 | 101.3 | 401 | 7/7 |
-| SSTF | 2 | 2 | 607 | 49.6 | 248 | 7/7 |
-| SCAN | 2 | 2 | 779 | 65.6 | 283 | 7/7 |
-| C-SCAN | 2 | 2 | 480 | 54.8 | 223 | 7/7 |
+| FIFO | 3 | 3 | 988 | 79.2 | 308 | 7/7 |
+| SSTF | 2 | 2 | 532 | 39.9 | 185 | 7/7 |
+| SCAN | 2 | 2 | 764 | 54.2 | 232 | 7/7 |
+| C-SCAN | 2 | 2 | 465 | 43.4 | 172 | 7/7 |
+| LOOK | 2 | 2 | 576 | 44.1 | 194 | 7/7 |
+| C-LOOK | 2 | 2 | 371 | 37.1 | 152 | 7/7 |
 
 - **La suspension permite que terminen todos los procesos aunque no quepan juntos en la RAM.** Sin ella, P5 y P6 se quedarian en Nuevo hasta que algun proceso terminara.
-- **Tiene un costo alto en disco.** Cada suspension y cada reactivacion son solicitudes que escriben o leen 16 bloques del area de intercambio (bloques 200 a 299), asi que el cabezal tiene que ir y volver entre la zona de archivos y la de intercambio. Comparando con P1 a P4 (que tienen un proceso mas), el desplazamiento sube entre 1.7 veces (FIFO) y 2.6 veces (SSTF y C-SCAN) con la misma politica.
-- **La politica de disco cambia cuantas suspensiones hacen falta.** Con FIFO las solicitudes de intercambio esperan su turno detras de las de archivos; los procesos quedan mas tiempo bloqueados y hace falta suspender uno mas (3 contra 2). Con SSTF y C-SCAN el disco atiende antes lo que esta cerca y los procesos se liberan antes.
+- **Tiene un costo alto en disco.** Cada suspension y cada reactivacion son solicitudes que escriben o leen 16 bloques del area de intercambio (bloques 200 a 299), asi que el cabezal tiene que ir y volver entre la zona de archivos y la de intercambio. Comparando con P1 a P4 (que tienen un proceso mas), el desplazamiento sube entre 1.5 veces (FIFO) y 2.5 veces (C-SCAN) con la misma politica.
+- **La politica de disco cambia cuantas suspensiones hacen falta.** Con FIFO las solicitudes de intercambio esperan su turno detras de las de archivos; los procesos quedan mas tiempo bloqueados y hace falta suspender uno mas (3 contra 2). Con SSTF, C-SCAN y C-LOOK el disco atiende antes lo que esta cerca y los procesos se liberan antes; C-LOOK es la que termina en menos ciclos (152).
 - Al terminar todas las corridas el area de intercambio queda vacia (100 de 100 libres): cada bloque que ocupa un `SUSPENDER` lo libera su `REACTIVAR` o el final del proceso.
 
 ## 6. Diagramas UML
@@ -181,6 +187,7 @@ classDiagram
         -int bloquesSwap
         -int cabezal
         -DireccionCabezal direccion
+        -ModoTransferencia modoTransferencia
         -Listas~SolicitudES~ cola
         -SolicitudES actual
         -Semaphore llave
@@ -192,6 +199,7 @@ classDiagram
         +asignarSwap(int, String) int[]
         +liberar(int)
         +cadena(int) int[]
+        +recorridoDe(int[]) int[]
         +getDesplazamientoTotal() long
         +getEsperaPromedio() double
     }
@@ -219,6 +227,8 @@ classDiagram
     class DiscoSSTF
     class DiscoSCAN
     class DiscoCSCAN
+    class DiscoLOOK
+    class DiscoCLOOK
     class DecisionDisco {
         -SolicitudES solicitud
         -int extremo
@@ -369,6 +379,8 @@ classDiagram
     PlanificadorDisco <|.. DiscoSSTF
     PlanificadorDisco <|.. DiscoSCAN
     PlanificadorDisco <|.. DiscoCSCAN
+    PlanificadorDisco <|.. DiscoLOOK
+    PlanificadorDisco <|.. DiscoCLOOK
     PlanificadorMedianoPlazo <|.. MedianoPlazoAntiguedad
     SistemaOperativo *-- Computador
     SistemaOperativo *-- Disco
@@ -471,4 +483,5 @@ sequenceDiagram
 1. Abrir `AvilaOS` en NetBeans (Java 21) y ejecutar: la clase principal es `interfaz.inicio`.
 2. Cargar los dos JSON (vienen sugeridos los de `datos/`) y *Abrir el simulador*. *Iniciar* arranca el reloj.
 3. Para ver la suspension: cargar `datos/procesos_suspension.json`.
-4. Pruebas por consola (clic derecho > *Run File*): `pruebas.PruebaDisco`, `PruebaSuspension`, `PruebaPermisos`, `PruebaArchivos`.
+4. Pruebas por consola (clic derecho > *Run File*): `pruebas.PruebaDisco`, `PruebaEnunciado`, `PruebaSuspension`, `PruebaPermisos`, `PruebaArchivos`.
+5. Para probar con los archivos exactos del enunciado: cargar `datos/enunciado_sistema_archivos.json` y `datos/enunciado_procesos.json`.
