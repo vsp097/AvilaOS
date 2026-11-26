@@ -1,0 +1,56 @@
+sequenceDiagram
+    %% parte de Andrea: secuencia de una operacion de E/S (LEER /usuarios/data.csv)
+    autonumber
+    actor U as Usuario
+    participant F as FormularioES
+    participant SO as SistemaOperativo
+    participant C as Computador
+    participant R as GlobalClock
+    participant SA as SistemaArchivos
+    participant D as Disco
+    participant P as PlanificadorDisco
+
+    U->>F: llena el formulario y aprieta Crear proceso
+    F->>F: Validaciones (tipo y rango)
+    F->>SO: crearProceso(datos)
+    SO->>SA: tomar() y revisarOperacion (existe y permisos)
+    alt operacion no permitida (modo usuario)
+        SO-->>F: IllegalArgumentException con el motivo
+        F-->>U: mensaje en rojo, la simulacion sigue
+    else permitida
+        SO->>C: agregarProceso(PCB)  [Nuevo]
+    end
+
+    R->>C: onTick(ciclo)
+    C->>C: admitirInterno(): hay RAM, pasa a Listo
+    R->>C: onTick(ciclo + k)
+    C->>C: elegir(): Ejecucion
+    C->>C: ejecutar(): primera instruccion en modo SO
+    C->>SO: solicitar(PCB, ciclo)  (ServicioES)
+    SO->>SA: tomar(), revisa otra vez, arma el recorrido de bloques
+    SO->>D: encolar(SolicitudES)
+    SO-->>C: null (sin error)
+    C->>C: PCB a Bloqueados, motivo E/S de disco
+
+    opt no cabe un proceso nuevo en la RAM
+        C->>C: hacerEspacio(): el mediano plazo elige este bloqueado
+        C->>SO: suspender(PCB)  (ServicioIntercambio)
+        SO->>D: retirar(PCB) saca su solicitud de archivo
+        SO->>D: asignarSwap(n) y encolarSinContar(SUSPENDER)
+        Note over D: cuando termina SUSPENDER: Bloqueado/Suspendido,<br/>se libera su RAM y la solicitud de archivo vuelve a la cola
+    end
+
+    loop cada ciclo hasta terminar la solicitud
+        R->>D: onTick(ciclo)
+        D->>P: decidir(cola, cabezal, direccion)
+        P-->>D: DecisionDisco (solicitud a atender)
+        D->>D: mover el cabezal o leer un bloque
+    end
+    D->>SO: solicitudAtendida(s)  (OyenteDisco, ya sin el semaforo del disco)
+    SO->>SA: aplicar(s): el cambio en el arbol se hace aqui
+    SO->>C: despertar(PCB)
+    alt estaba en Bloqueados
+        C->>C: pasa a Listo
+    else estaba en Bloqueados/Suspendidos
+        C->>C: pasa a Listo/Suspendido (espera que el mediano plazo lo reactive)
+    end

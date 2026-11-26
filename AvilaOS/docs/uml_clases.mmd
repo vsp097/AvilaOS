@@ -1,0 +1,270 @@
+classDiagram
+    direction LR
+    %% parte de Vyckhy: diagrama de clases del Proyecto 2
+
+    class GlobalClock {
+        -long cycleDuration
+        -long cycle
+        -Listas~ClockListener~ Clocklist
+        +run()
+        +agregar(ClockListener)
+        +pausar()
+        +reanudar()
+    }
+    class ClockListener {
+        <<interface>>
+        +onTick(long cycle)
+    }
+    class Computador {
+        -Cola~PCB~ Nuevos, Listos, Bloqueados, Terminados
+        -Cola~PCB~ ListosSuspendidos, BloqueadosSuspendidos
+        -PCB enEjecucion
+        -float RAM
+        -float ramEnCamino
+        -Semaphore llave
+        +onTick(long)
+        +agregarProceso(PCB)
+        +despertar(PCB)
+        +fallar(PCB, String)
+        +suspensionLista(PCB)
+        +reactivacionLista(PCB)
+        +copiarColas() PCB[][]
+        -admitirInterno()
+        -hacerEspacio(PCB)
+        -revisarReactivacion()
+    }
+    class Disco {
+        -Bloque[] bloques
+        -int bloquesArchivos
+        -int bloquesSwap
+        -int cabezal
+        -DireccionCabezal direccion
+        -ModoTransferencia modoTransferencia
+        -Listas~SolicitudES~ cola
+        -SolicitudES actual
+        -Semaphore llave
+        +onTick(long)
+        +encolar(SolicitudES)
+        +encolarSinContar(SolicitudES)
+        +retirar(PCB) SolicitudES
+        +asignar(int, String, int) int[]
+        +asignarSwap(int, String) int[]
+        +liberar(int)
+        +cadena(int) int[]
+        +recorridoDe(int[]) int[]
+        +getDesplazamientoTotal() long
+        +getEsperaPromedio() double
+    }
+    class Bloque {
+        -int numero
+        -boolean ocupado
+        -int siguiente
+        -String ocupante
+        -boolean swap
+    }
+    class SolicitudES {
+        -PCB proceso
+        -TipoOperacionES operacion
+        -String ruta
+        -int[] recorrido
+        -long cicloLlegada
+        -SolicitudES pendiente
+    }
+    class PlanificadorDisco {
+        <<interface>>
+        +getPolitica() PoliticaDisco
+        +decidir(cola, cabezal, direccion, ultimoBloque) DecisionDisco
+    }
+    class DiscoFIFO
+    class DiscoSSTF
+    class DiscoSCAN
+    class DiscoCSCAN
+    class DiscoLOOK
+    class DiscoCLOOK
+    class DecisionDisco {
+        -SolicitudES solicitud
+        -int extremo
+        -int saltoA
+    }
+    class SistemaOperativo {
+        -Computador computador
+        -Disco disco
+        -SistemaArchivos archivos
+        -LogEventos log
+        -Metricas metricas
+        -GlobalClock reloj
+        -ModoUsuario modo
+        +crearProceso(DatosProceso) PCB
+        +solicitar(PCB, long) String
+        +solicitudAtendida(SolicitudES)
+        +suspender(PCB, long) String
+        +reactivar(PCB, long)
+        +cambiarPoliticaDisco(PoliticaDisco)
+        +guardarArchivos(String)
+        +copiarArbol() InfoNodo[]
+    }
+    class ServicioES {
+        <<interface>>
+        +solicitar(PCB, long) String
+        +cpuOciosa()
+    }
+    class OyenteDisco {
+        <<interface>>
+        +solicitudAtendida(SolicitudES)
+    }
+    class ServicioIntercambio {
+        <<interface>>
+        +puedeSuspender(PCB) boolean
+        +suspender(PCB, long) String
+        +reactivar(PCB, long)
+        +liberarSwap(PCB)
+    }
+    class PlanificadorMedianoPlazo {
+        <<interface>>
+        +elegirParaSuspender(Cola~PCB~) PCB
+        +elegirParaReactivar(Cola~PCB~) PCB
+    }
+    class MedianoPlazoAntiguedad
+    class Planificador {
+        <<interface>>
+        +elegirSiguiente(Cola~PCB~) PCB
+        +debeSacar(PCB, Cola~PCB~, int) boolean
+    }
+    class SistemaArchivos {
+        -NodoArchivo raiz
+        -Semaphore llave
+        +buscar(String) NodoArchivo
+        +crear(...) NodoArchivo
+        +quitar(NodoArchivo)
+        +renombrar(NodoArchivo, String)
+        +revisarPermiso(...)$ String
+    }
+    class NodoArchivo {
+        -String nombre
+        -TipoNodo tipo
+        -String dueno
+        -Permiso permiso
+        -int primerBloque
+        -int bloques
+        -Listas~NodoArchivo~ hijos
+    }
+    class PCB {
+        -int ID
+        -String name
+        -int pc
+        -EstadoProceso state
+        -TipoProceso type
+        -float mem
+        -MotivoBloqueo motivo
+        -TipoOperacionES operacion
+        -String ruta
+        -int primerSwap
+        -int bloquesSwap
+    }
+    class Metricas {
+        +registrarCiclo(boolean)
+        +registrarSuspension()
+        +registrarReactivacion()
+        +registrarDisco(long, long, PoliticaDisco)
+    }
+    class ArchivosJSON {
+        +cargarArchivos(String)$ ConfigArchivos
+        +cargarProcesos(String)$ ConfigProcesos
+        +guardarArchivos(ConfigArchivos, String)$
+    }
+    class Listas~T~
+    class Cola~T~
+
+    class EstadoProceso {
+        <<enumeration>>
+        Nuevo
+        Listo
+        Ejecucion
+        Bloqueado
+        ListoSuspendido
+        BloqueadoSuspendido
+        Terminado
+    }
+    class TipoOperacionES {
+        <<enumeration>>
+        CREAR
+        LEER
+        ACTUALIZAR
+        ELIMINAR
+        SUSPENDER
+        REACTIVAR
+    }
+    class PoliticaDisco {
+        <<enumeration>>
+        FIFO
+        SSTF
+        SCAN
+        C_SCAN
+        LOOK
+        C_LOOK
+    }
+    class ModoUsuario {
+        <<enumeration>>
+        ADMINISTRADOR
+        USUARIO
+    }
+    class MotivoBloqueo {
+        <<enumeration>>
+        NINGUNO
+        ES_DISCO
+        SUSPENSION
+    }
+
+    class main
+    class PanelColas
+    class PanelDisco
+    class PanelArchivos
+    class PanelTablas
+    class PanelMetricas
+    class FormularioES
+
+    ClockListener <|.. Computador
+    ClockListener <|.. Disco
+    GlobalClock o-- ClockListener : avisa cada ciclo
+    ServicioES <|.. SistemaOperativo
+    OyenteDisco <|.. SistemaOperativo
+    ServicioIntercambio <|.. SistemaOperativo
+    PlanificadorDisco <|.. DiscoFIFO
+    PlanificadorDisco <|.. DiscoSSTF
+    PlanificadorDisco <|.. DiscoSCAN
+    PlanificadorDisco <|.. DiscoCSCAN
+    PlanificadorDisco <|.. DiscoLOOK
+    PlanificadorDisco <|.. DiscoCLOOK
+    PlanificadorMedianoPlazo <|.. MedianoPlazoAntiguedad
+    SistemaOperativo *-- Computador
+    SistemaOperativo *-- Disco
+    SistemaOperativo *-- SistemaArchivos
+    SistemaOperativo *-- GlobalClock
+    SistemaOperativo *-- Metricas
+    Computador --> ServicioES
+    Computador --> ServicioIntercambio
+    Computador --> PlanificadorMedianoPlazo
+    Computador --> Planificador
+    Computador o-- PCB
+    Computador ..> Cola
+    Disco *-- Bloque
+    Disco o-- SolicitudES
+    Disco --> PlanificadorDisco
+    Disco --> OyenteDisco
+    PlanificadorDisco ..> DecisionDisco
+    SolicitudES --> PCB
+    SistemaArchivos *-- NodoArchivo
+    NodoArchivo ..> Listas
+    PCB --> EstadoProceso
+    PCB --> MotivoBloqueo
+    PCB --> TipoOperacionES
+    Disco --> PoliticaDisco
+    SistemaOperativo --> ModoUsuario
+    SistemaOperativo ..> ArchivosJSON
+    main --> SistemaOperativo : solo observa
+    main *-- PanelColas
+    main *-- PanelDisco
+    main *-- PanelArchivos
+    main *-- PanelTablas
+    main ..> PanelMetricas
+    main ..> FormularioES
