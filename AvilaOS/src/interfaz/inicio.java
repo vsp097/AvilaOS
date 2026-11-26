@@ -1,106 +1,66 @@
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package interfaz;
 
+//--- bloque a: imports ---
 import avilaos.ArchivosJSON;
 import avilaos.ConfigArchivos;
 import avilaos.ConfigProcesos;
 import avilaos.SistemaOperativo;
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.GridLayout;
 import java.io.File;
 import java.io.IOException;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileNameExtensionFilter;
+//--- fin del bloque a: imports ---
 
 /**
  *
- * @author vyckh
+ * @author diego
  */
 //la primera ventana: no deja arrancar hasta que esten cargados los dos archivos json
-public class inicio extends JFrame {
+public class inicio extends javax.swing.JFrame {
 
-    private JTextField txtArchivos = new JTextField();
-    private JTextField txtProcesos = new JTextField();
-    private JLabel lblArchivos = new JLabel(" ");
-    private JLabel lblProcesos = new JLabel(" ");
-    private JLabel lblError = new JLabel(" ");
-    private JButton btnIniciar = new JButton("Abrir el simulador");
+    //--- bloque a: campos ---
     //los dos archivos ya leidos y validados, null mientras no se hayan cargado
     private ConfigArchivos configArchivos;
     private ConfigProcesos configProcesos;
+    //--- fin del bloque a: campos ---
 
+    /**
+     * Creates new form inicio
+     */
     public inicio() {
-        super("AvilaOS");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        JLabel titulo = new JLabel("AvilaOS - carga de archivos");
-        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 18f));
-        titulo.setBorder(BorderFactory.createEmptyBorder(14, 16, 4, 16));
-
-        JPanel centro = new JPanel(new GridLayout(0, 1, 0, 4));
-        centro.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
-        centro.add(new JLabel("1. Sistema de archivos (disco, directorios y archivos)"));
-        centro.add(fila(txtArchivos, true));
-        centro.add(lblArchivos);
-        centro.add(new JLabel("2. Procesos y configuracion (RAM, politicas, area de intercambio)"));
-        centro.add(fila(txtProcesos, false));
-        centro.add(lblProcesos);
-        centro.add(lblError);
-
-        JPanel abajo = new JPanel();
-        abajo.setBorder(BorderFactory.createEmptyBorder(0, 16, 12, 16));
-        btnIniciar.setEnabled(false);
-        btnIniciar.addActionListener(e -> abrir());
-        abajo.add(btnIniciar);
-
-        setLayout(new BorderLayout());
-        add(titulo, BorderLayout.NORTH);
-        add(centro, BorderLayout.CENTER);
-        add(abajo, BorderLayout.SOUTH);
-        lblError.setForeground(new Color(190, 30, 30));
+        initComponents();
+        //--- bloque b ---
         setSize(720, 330);
         setLocationRelativeTo(null);
-
         //si estan los archivos de ejemplo del proyecto se dejan escritos, pero igual hay que cargarlos
         sugerir(txtArchivos, "datos/sistema_archivos.json");
         sugerir(txtProcesos, "datos/procesos_fifo.json");
+        //--- fin del bloque b ---
     }
 
+    //--- bloque c ---
     private void sugerir(JTextField campo, String ruta) {
         if (new File(ruta).isFile()) {
             campo.setText(ruta);
         }
     }
 
-    private JPanel fila(final JTextField campo, final boolean esArchivos) {
-        JPanel p = new JPanel(new BorderLayout(6, 0));
-        JPanel botones = new JPanel(new GridLayout(1, 2, 6, 0));
-        JButton buscar = new JButton("Buscar...");
-        JButton cargar = new JButton("Cargar");
-        buscar.addActionListener(e -> {
-            JFileChooser selector = new JFileChooser(new File(campo.getText().isEmpty() ? "." : campo.getText()).getAbsoluteFile().getParentFile());
-            selector.setFileFilter(new FileNameExtensionFilter("Archivos JSON", "json"));
-            if (selector.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                campo.setText(selector.getSelectedFile().getPath());
-                cargar(esArchivos);
-            }
-        });
-        cargar.addActionListener(e -> cargar(esArchivos));
-        botones.add(buscar);
-        botones.add(cargar);
-        p.add(campo, BorderLayout.CENTER);
-        p.add(botones, BorderLayout.EAST);
-        return p;
+    //abre el selector de archivos empezando en la carpeta de lo que ya esta escrito
+    private void buscar(JTextField campo, boolean esArchivos) {
+        File actual = new File(campo.getText().isEmpty() ? "." : campo.getText()).getAbsoluteFile();
+        JFileChooser selector = new JFileChooser(actual.getParentFile());
+        selector.setFileFilter(new FileNameExtensionFilter("Archivos JSON", "json"));
+        if (selector.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            campo.setText(selector.getSelectedFile().getPath());
+            cargar(esArchivos);
+        }
     }
 
     //lee y valida uno de los dos archivos; si esta malo dice por que y no deja seguir
@@ -137,7 +97,23 @@ public class inicio extends JFrame {
         btnIniciar.setEnabled(configArchivos != null && configProcesos != null);
     }
 
-    private void abrir() {
+    private void btnBuscarArchivosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarArchivosActionPerformed
+        buscar(txtArchivos, true);
+    }//GEN-LAST:event_btnBuscarArchivosActionPerformed
+
+    private void btnCargarArchivosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCargarArchivosActionPerformed
+        cargar(true);
+    }//GEN-LAST:event_btnCargarArchivosActionPerformed
+
+    private void btnBuscarProcesosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarProcesosActionPerformed
+        buscar(txtProcesos, false);
+    }//GEN-LAST:event_btnBuscarProcesosActionPerformed
+
+    private void btnCargarProcesosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCargarProcesosActionPerformed
+        cargar(false);
+    }//GEN-LAST:event_btnCargarProcesosActionPerformed
+
+    private void btnIniciarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIniciarActionPerformed
         try {
             //aqui se arma todo el sistema; si los dos archivos no cuadran entre si, avisa
             SistemaOperativo so = new SistemaOperativo(configArchivos, configProcesos);
@@ -148,8 +124,132 @@ public class inicio extends JFrame {
             lblError.setText(e.getMessage());
             lblError.setToolTipText(e.getMessage());
         }
-    }
+    }//GEN-LAST:event_btnIniciarActionPerformed
+    //--- fin del bloque c ---
 
+    //--- diseno: esto lo genera el disenador de NetBeans ---
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        lblTitulo = new javax.swing.JLabel();
+        pnlCentro = new javax.swing.JPanel();
+        lblPaso1 = new javax.swing.JLabel();
+        pnlFilaArchivos = new javax.swing.JPanel();
+        txtArchivos = new javax.swing.JTextField();
+        pnlBotonesArchivos = new javax.swing.JPanel();
+        btnBuscarArchivos = new javax.swing.JButton();
+        btnCargarArchivos = new javax.swing.JButton();
+        lblArchivos = new javax.swing.JLabel();
+        lblPaso2 = new javax.swing.JLabel();
+        pnlFilaProcesos = new javax.swing.JPanel();
+        txtProcesos = new javax.swing.JTextField();
+        pnlBotonesProcesos = new javax.swing.JPanel();
+        btnBuscarProcesos = new javax.swing.JButton();
+        btnCargarProcesos = new javax.swing.JButton();
+        lblProcesos = new javax.swing.JLabel();
+        lblError = new javax.swing.JLabel();
+        pnlAbajo = new javax.swing.JPanel();
+        btnIniciar = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("AvilaOS");
+
+        lblTitulo.setFont(lblTitulo.getFont().deriveFont(lblTitulo.getFont().getStyle() | java.awt.Font.BOLD, lblTitulo.getFont().getSize()+6));
+        lblTitulo.setText("AvilaOS - carga de archivos");
+        lblTitulo.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 16, 4, 16));
+        getContentPane().add(lblTitulo, java.awt.BorderLayout.PAGE_START);
+
+        pnlCentro.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        pnlCentro.setLayout(new java.awt.GridLayout(7, 1, 0, 4));
+
+        lblPaso1.setText("1. Sistema de archivos (disco, directorios y archivos)");
+        pnlCentro.add(lblPaso1);
+
+        pnlFilaArchivos.setLayout(new java.awt.BorderLayout(6, 0));
+        pnlFilaArchivos.add(txtArchivos, java.awt.BorderLayout.CENTER);
+
+        pnlBotonesArchivos.setLayout(new java.awt.GridLayout(1, 2, 6, 0));
+
+        btnBuscarArchivos.setText("Buscar...");
+        btnBuscarArchivos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBuscarArchivosActionPerformed(evt);
+            }
+        });
+        pnlBotonesArchivos.add(btnBuscarArchivos);
+
+        btnCargarArchivos.setText("Cargar");
+        btnCargarArchivos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCargarArchivosActionPerformed(evt);
+            }
+        });
+        pnlBotonesArchivos.add(btnCargarArchivos);
+
+        pnlFilaArchivos.add(pnlBotonesArchivos, java.awt.BorderLayout.LINE_END);
+
+        pnlCentro.add(pnlFilaArchivos);
+
+        lblArchivos.setText(" ");
+        pnlCentro.add(lblArchivos);
+
+        lblPaso2.setText("2. Procesos y configuracion (RAM, politicas, area de intercambio)");
+        pnlCentro.add(lblPaso2);
+
+        pnlFilaProcesos.setLayout(new java.awt.BorderLayout(6, 0));
+        pnlFilaProcesos.add(txtProcesos, java.awt.BorderLayout.CENTER);
+
+        pnlBotonesProcesos.setLayout(new java.awt.GridLayout(1, 2, 6, 0));
+
+        btnBuscarProcesos.setText("Buscar...");
+        btnBuscarProcesos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBuscarProcesosActionPerformed(evt);
+            }
+        });
+        pnlBotonesProcesos.add(btnBuscarProcesos);
+
+        btnCargarProcesos.setText("Cargar");
+        btnCargarProcesos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCargarProcesosActionPerformed(evt);
+            }
+        });
+        pnlBotonesProcesos.add(btnCargarProcesos);
+
+        pnlFilaProcesos.add(pnlBotonesProcesos, java.awt.BorderLayout.LINE_END);
+
+        pnlCentro.add(pnlFilaProcesos);
+
+        lblProcesos.setText(" ");
+        pnlCentro.add(lblProcesos);
+
+        lblError.setForeground(new java.awt.Color(190, 30, 30));
+        lblError.setText(" ");
+        pnlCentro.add(lblError);
+
+        getContentPane().add(pnlCentro, java.awt.BorderLayout.CENTER);
+
+        pnlAbajo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 16, 12, 16));
+
+        btnIniciar.setText("Abrir el simulador");
+        btnIniciar.setEnabled(false);
+        btnIniciar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnIniciarActionPerformed(evt);
+            }
+        });
+        pnlAbajo.add(btnIniciar);
+
+        getContentPane().add(pnlAbajo, java.awt.BorderLayout.PAGE_END);
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    /**
+     * @param args the command line arguments
+     */
     public static void main(String args[]) {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
@@ -163,4 +263,27 @@ public class inicio extends JFrame {
         }
         java.awt.EventQueue.invokeLater(() -> new inicio().setVisible(true));
     }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnBuscarArchivos;
+    private javax.swing.JButton btnBuscarProcesos;
+    private javax.swing.JButton btnCargarArchivos;
+    private javax.swing.JButton btnCargarProcesos;
+    private javax.swing.JButton btnIniciar;
+    private javax.swing.JLabel lblArchivos;
+    private javax.swing.JLabel lblError;
+    private javax.swing.JLabel lblPaso1;
+    private javax.swing.JLabel lblPaso2;
+    private javax.swing.JLabel lblProcesos;
+    private javax.swing.JLabel lblTitulo;
+    private javax.swing.JPanel pnlAbajo;
+    private javax.swing.JPanel pnlBotonesArchivos;
+    private javax.swing.JPanel pnlBotonesProcesos;
+    private javax.swing.JPanel pnlCentro;
+    private javax.swing.JPanel pnlFilaArchivos;
+    private javax.swing.JPanel pnlFilaProcesos;
+    private javax.swing.JTextField txtArchivos;
+    private javax.swing.JTextField txtProcesos;
+    // End of variables declaration//GEN-END:variables
+    //--- fin del diseno ---
 }
