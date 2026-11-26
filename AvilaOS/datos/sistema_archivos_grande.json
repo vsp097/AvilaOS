@@ -1,0 +1,21 @@
+{
+  "diskConfig": {
+    "totalBlocks": 300,
+    "initialHead": 100,
+    "headSpeed": 5
+  },
+  "fileSystem": [
+    { "path": "/sistema", "type": "DIRECTORY", "owner": "admin", "permissions": "public" },
+    { "path": "/usuarios", "type": "DIRECTORY", "owner": "admin", "permissions": "public" },
+    { "path": "/usuarios/user1", "type": "DIRECTORY", "owner": "user1", "permissions": "public" },
+    { "path": "/usuarios/user2", "type": "DIRECTORY", "owner": "user2", "permissions": "public" },
+    { "path": "/sistema/kernel.bin", "type": "FILE", "startBlock": 0, "blocks": 12, "owner": "admin", "permissions": "public" },
+    { "path": "/sistema/drivers.sys", "type": "FILE", "chain": [40, 41, 75, 76, 77, 140], "owner": "admin", "permissions": "public" },
+    { "path": "/sistema/log.txt", "type": "FILE", "startBlock": 210, "blocks": 3, "owner": "admin", "permissions": "private" },
+    { "path": "/usuarios/user1/tesis.docx", "type": "FILE", "chain": [55, 120, 121, 122, 250, 251, 252, 30], "owner": "user1", "permissions": "private" },
+    { "path": "/usuarios/user1/musica.mp3", "type": "FILE", "startBlock": 160, "blocks": 10, "owner": "user1", "permissions": "public" },
+    { "path": "/usuarios/user2/fotos.zip", "type": "FILE", "chain": [90, 91, 92, 93, 280, 281, 282, 283, 284], "owner": "user2", "permissions": "public" },
+    { "path": "/usuarios/user2/claves.txt", "type": "FILE", "startBlock": 199, "blocks": 2, "owner": "user2", "permissions": "private" },
+    { "path": "/usuarios/compartido.csv", "type": "FILE", "startBlock": 230, "blocks": 4, "owner": "admin", "permissions": "public" }
+  ]
+}
