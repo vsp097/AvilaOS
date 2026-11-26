@@ -80,3 +80,11 @@ AvilaOS separa el **hardware simulado**, el **sistema operativo** y la **interfa
 | `ServicioIntercambio` | `SistemaOperativo` | El mediano plazo pide suspender y reactivar. |
 | `Planificador` | `FCFS`, `Roundrobin`, `EDF`, `Prioridades` | Politicas de CPU (Proyecto 1). |
 
+## 4. Suspension y planificador a mediano plazo (Diego, revisado por Andrea)
+
+- **Cuando se suspende.** Si un proceso nuevo no cabe en la RAM, el mediano plazo elige un **Bloqueado** y genera una solicitud `SUSPENDER` que escribe tantos bloques en el area de intercambio como unidades de memoria tiene el proceso. Cuando el disco termina, se libera su RAM y pasa a **Bloqueado/Suspendido**. Si no hay espacio en el area de intercambio, no se suspende y se registra en el log.
+- **A quien.** Al que lleva mas tiempo bloqueado; si empatan, al de menor prioridad. El que lleva mas tiempo bloqueado es el que mas tiempo lleva ocupando RAM sin usarla; la prioridad solo desempata para no sacar a uno importante cuando da igual cual sacar.
+- **Una sola solicitud por proceso.** Solo se suspende a un proceso cuya solicitud de archivo sigue esperando en la cola (no la que el disco esta atendiendo). Esa solicitud se saca de la cola mientras se hace el `SUSPENDER` y vuelve a entrar cuando termina; asi un proceso nunca tiene dos solicitudes en el disco.
+- **Su evento ocurre.** Cuando termina su solicitud de archivo, pasa de Bloqueado/Suspendido a **Listo/Suspendido**.
+- **Reactivar.** Cuando un proceso termina y libera RAM, el mediano plazo revisa los Listo/Suspendidos **antes** que los nuevos (ya fueron admitidos una vez y si no se les da prioridad se pueden quedar afuera para siempre). Se le aparta la RAM de una vez, se genera `REACTIVAR` (lee sus bloques del area de intercambio) y al terminar se liberan esos bloques y pasa a **Listo**. La memoria que libera una suspension es para el nuevo que la provoco.
+
