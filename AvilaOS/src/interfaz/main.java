@@ -249,7 +249,7 @@ public class main extends javax.swing.JFrame {
 
     private void btnMetricasActionPerformed(java.awt.event.ActionEvent evt) {
         if (ventanaMetricas == null) {
-            panelMetricas = new PanelMetricas(so.getMetricas(), 1, 0);
+            panelMetricas = new PanelMetricas(so.getMetricas(), so.getDisco());
             ventanaMetricas = new VentanaMetricas(panelMetricas);
             ventanaMetricas.setLocationRelativeTo(this);
         }

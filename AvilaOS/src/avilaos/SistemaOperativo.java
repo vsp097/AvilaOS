@@ -58,7 +58,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
         computador.settype("MB");
         computador.setNombre("Computador");
         computador.setLog(log);
-        computador.setMetricas(metricas, 0);
+        computador.setMetricas(metricas);
         computador.setServicioES(this);
         computador.setServicioIntercambio(this);
         computador.setPlanificador(SelectorPolitica.crear(ConfigProcesos.leerPolitica(cp.computer.policy),
@@ -67,6 +67,8 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
         //primero el computador y despues el disco: lo que un proceso pide en un ciclo el disco ya lo ve en ese ciclo
         reloj.agregar(computador);
         reloj.agregar(disco);
+        //al final de cada ciclo se anota cuanto se ha movido el cabezal, para la grafica
+        reloj.agregar(c -> anotarDisco(c));
 
         cargarProcesos(cp);
     }
@@ -171,6 +173,11 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
     //el ciclo que va el computador; es el mismo del reloj, pero tambien sirve cuando los ciclos se dan a mano
     private int ciclo() {
         return (int) Math.max(reloj.getCiclo(), computador.getCiclo());
+    }
+
+    //la muestra del disco para la grafica del desplazamiento acumulado
+    public void anotarDisco(long ciclo) {
+        metricas.registrarDisco(ciclo, disco.getDesplazamientoTotal(), disco.getPolitica());
     }
 
     public long getDuracionCiclo() {
