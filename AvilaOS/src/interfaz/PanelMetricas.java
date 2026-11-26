@@ -141,6 +141,20 @@ public class PanelMetricas extends javax.swing.JPanel {
         }
         JFreeChart g = ChartFactory.createXYLineChart("Desplazamiento acumulado del cabezal", "Ciclo",
                 "Bloques recorridos", datos, PlotOrientation.VERTICAL, true, true, false);
+        //un color fijo y bien distinto por politica, sobre fondo blanco, para poder compararlas
+        java.awt.Color[] colores = {
+            new java.awt.Color(214, 39, 40), new java.awt.Color(31, 119, 180), new java.awt.Color(44, 160, 44),
+            new java.awt.Color(255, 127, 14), new java.awt.Color(148, 103, 189), new java.awt.Color(23, 190, 207)
+        };
+        org.jfree.chart.plot.XYPlot plot = g.getXYPlot();
+        plot.setBackgroundPaint(java.awt.Color.WHITE);
+        plot.setDomainGridlinePaint(java.awt.Color.LIGHT_GRAY);
+        plot.setRangeGridlinePaint(java.awt.Color.LIGHT_GRAY);
+        org.jfree.chart.renderer.xy.XYItemRenderer r = plot.getRenderer();
+        for (int i = 0; i < politicas.length; i++) {
+            r.setSeriesPaint(i, colores[i % colores.length]);
+            r.setSeriesStroke(i, new java.awt.BasicStroke(2.5f));
+        }
         return new ChartPanel(g);
     }
 
