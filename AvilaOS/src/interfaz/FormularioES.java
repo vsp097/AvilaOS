@@ -48,7 +48,7 @@ public class FormularioES extends javax.swing.JDialog {
         cmbPermiso.addItem("publico");
         cmbPermiso.addItem("privado");
         getRootPane().setDefaultButton(btnCrear);
-        setSize(560, 520);
+        setSize(680, 560);
         setLocationRelativeTo(parent);
         nombrePorDefecto();
         actualizarCampos();
@@ -138,7 +138,8 @@ public class FormularioES extends javax.swing.JDialog {
         } catch (IllegalArgumentException e) {
             //la entrada mala o la operacion rechazada se explican aqui y la simulacion sigue corriendo
             lblMensaje.setForeground(new Color(190, 30, 30));
-            lblMensaje.setText(e.getMessage());
+            //en html para que el motivo completo se lea en dos lineas y no quede cortado
+            lblMensaje.setText("<html>" + e.getMessage().replace("&", "&amp;").replace("<", "&lt;") + "</html>");
             lblMensaje.setToolTipText(e.getMessage());
         }
     }
