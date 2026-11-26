@@ -132,3 +132,343 @@ Los cuatro coinciden con el anexo del enunciado.
 - **La politica de disco cambia cuantas suspensiones hacen falta.** Con FIFO las solicitudes de intercambio esperan su turno detras de las de archivos; los procesos quedan mas tiempo bloqueados y hace falta suspender uno mas (3 contra 2). Con SSTF y C-SCAN el disco atiende antes lo que esta cerca y los procesos se liberan antes.
 - Al terminar todas las corridas el area de intercambio queda vacia (100 de 100 libres): cada bloque que ocupa un `SUSPENDER` lo libera su `REACTIVAR` o el final del proceso.
 
+## 6. Diagramas UML
+
+Los diagramas estan en Mermaid: GitHub los dibuja directamente en este archivo. El codigo tambien esta suelto en `docs/uml_clases.mmd` y `docs/uml_secuencia_es.mmd`, y ya dibujados en `.png` para el PDF.
+
+### 6.1 Diagrama de clases (Vyckhy)
+Muestra los tres niveles (reloj y hardware, sistema operativo, interfaz), las interfaces y quien las implementa, y los enums. Imagen para el PDF: `docs/uml_clases.png`.
+
+```mermaid
+classDiagram
+    direction LR
+    %% parte de Vyckhy: diagrama de clases del Proyecto 2
+
+    class GlobalClock {
+        -long cycleDuration
+        -long cycle
+        -Listas~ClockListener~ Clocklist
+        +run()
+        +agregar(ClockListener)
+        +pausar()
+        +reanudar()
+    }
+    class ClockListener {
+        <<interface>>
+        +onTick(long cycle)
+    }
+    class Computador {
+        -Cola~PCB~ Nuevos, Listos, Bloqueados, Terminados
+        -Cola~PCB~ ListosSuspendidos, BloqueadosSuspendidos
+        -PCB enEjecucion
+        -float RAM
+        -float ramEnCamino
+        -Semaphore llave
+        +onTick(long)
+        +agregarProceso(PCB)
+        +despertar(PCB)
+        +fallar(PCB, String)
+        +suspensionLista(PCB)
+        +reactivacionLista(PCB)
+        +copiarColas() PCB[][]
+        -admitirInterno()
+        -hacerEspacio(PCB)
+        -revisarReactivacion()
+    }
+    class Disco {
+        -Bloque[] bloques
+        -int bloquesArchivos
+        -int bloquesSwap
+        -int cabezal
+        -DireccionCabezal direccion
+        -Listas~SolicitudES~ cola
+        -SolicitudES actual
+        -Semaphore llave
+        +onTick(long)
+        +encolar(SolicitudES)
+        +encolarSinContar(SolicitudES)
+        +retirar(PCB) SolicitudES
+        +asignar(int, String, int) int[]
+        +asignarSwap(int, String) int[]
+        +liberar(int)
+        +cadena(int) int[]
+        +getDesplazamientoTotal() long
+        +getEsperaPromedio() double
+    }
+    class Bloque {
+        -int numero
+        -boolean ocupado
+        -int siguiente
+        -String ocupante
+        -boolean swap
+    }
+    class SolicitudES {
+        -PCB proceso
+        -TipoOperacionES operacion
+        -String ruta
+        -int[] recorrido
+        -long cicloLlegada
+        -SolicitudES pendiente
+    }
+    class PlanificadorDisco {
+        <<interface>>
+        +getPolitica() PoliticaDisco
+        +decidir(cola, cabezal, direccion, ultimoBloque) DecisionDisco
+    }
+    class DiscoFIFO
+    class DiscoSSTF
+    class DiscoSCAN
+    class DiscoCSCAN
+    class DecisionDisco {
+        -SolicitudES solicitud
+        -int extremo
+        -int saltoA
+    }
+    class SistemaOperativo {
+        -Computador computador
+        -Disco disco
+        -SistemaArchivos archivos
+        -LogEventos log
+        -Metricas metricas
+        -GlobalClock reloj
+        -ModoUsuario modo
+        +crearProceso(DatosProceso) PCB
+        +solicitar(PCB, long) String
+        +solicitudAtendida(SolicitudES)
+        +suspender(PCB, long) String
+        +reactivar(PCB, long)
+        +cambiarPoliticaDisco(PoliticaDisco)
+        +guardarArchivos(String)
+        +copiarArbol() InfoNodo[]
+    }
+    class ServicioES {
+        <<interface>>
+        +solicitar(PCB, long) String
+        +cpuOciosa()
+    }
+    class OyenteDisco {
+        <<interface>>
+        +solicitudAtendida(SolicitudES)
+    }
+    class ServicioIntercambio {
+        <<interface>>
+        +puedeSuspender(PCB) boolean
+        +suspender(PCB, long) String
+        +reactivar(PCB, long)
+        +liberarSwap(PCB)
+    }
+    class PlanificadorMedianoPlazo {
+        <<interface>>
+        +elegirParaSuspender(Cola~PCB~) PCB
+        +elegirParaReactivar(Cola~PCB~) PCB
+    }
+    class MedianoPlazoAntiguedad
+    class Planificador {
+        <<interface>>
+        +elegirSiguiente(Cola~PCB~) PCB
+        +debeSacar(PCB, Cola~PCB~, int) boolean
+    }
+    class SistemaArchivos {
+        -NodoArchivo raiz
+        -Semaphore llave
+        +buscar(String) NodoArchivo
+        +crear(...) NodoArchivo
+        +quitar(NodoArchivo)
+        +renombrar(NodoArchivo, String)
+        +revisarPermiso(...)$ String
+    }
+    class NodoArchivo {
+        -String nombre
+        -TipoNodo tipo
+        -String dueno
+        -Permiso permiso
+        -int primerBloque
+        -int bloques
+        -Listas~NodoArchivo~ hijos
+    }
+    class PCB {
+        -int ID
+        -String name
+        -int pc
+        -EstadoProceso state
+        -TipoProceso type
+        -float mem
+        -MotivoBloqueo motivo
+        -TipoOperacionES operacion
+        -String ruta
+        -int primerSwap
+        -int bloquesSwap
+    }
+    class Metricas {
+        +registrarCiclo(boolean)
+        +registrarSuspension()
+        +registrarReactivacion()
+        +registrarDisco(long, long, PoliticaDisco)
+    }
+    class ArchivosJSON {
+        +cargarArchivos(String)$ ConfigArchivos
+        +cargarProcesos(String)$ ConfigProcesos
+        +guardarArchivos(ConfigArchivos, String)$
+    }
+    class Listas~T~
+    class Cola~T~
+
+    class EstadoProceso {
+        <<enumeration>>
+        Nuevo
+        Listo
+        Ejecucion
+        Bloqueado
+        ListoSuspendido
+        BloqueadoSuspendido
+        Terminado
+    }
+    class TipoOperacionES {
+        <<enumeration>>
+        CREAR
+        LEER
+        ACTUALIZAR
+        ELIMINAR
+        SUSPENDER
+        REACTIVAR
+    }
+    class PoliticaDisco {
+        <<enumeration>>
+        FIFO
+        SSTF
+        SCAN
+        C_SCAN
+    }
+    class ModoUsuario {
+        <<enumeration>>
+        ADMINISTRADOR
+        USUARIO
+    }
+    class MotivoBloqueo {
+        <<enumeration>>
+        NINGUNO
+        ES_DISCO
+        SUSPENSION
+    }
+
+    class main
+    class PanelColas
+    class PanelDisco
+    class PanelArchivos
+    class PanelTablas
+    class PanelMetricas
+    class FormularioES
+
+    ClockListener <|.. Computador
+    ClockListener <|.. Disco
+    GlobalClock o-- ClockListener : avisa cada ciclo
+    ServicioES <|.. SistemaOperativo
+    OyenteDisco <|.. SistemaOperativo
+    ServicioIntercambio <|.. SistemaOperativo
+    PlanificadorDisco <|.. DiscoFIFO
+    PlanificadorDisco <|.. DiscoSSTF
+    PlanificadorDisco <|.. DiscoSCAN
+    PlanificadorDisco <|.. DiscoCSCAN
+    PlanificadorMedianoPlazo <|.. MedianoPlazoAntiguedad
+    SistemaOperativo *-- Computador
+    SistemaOperativo *-- Disco
+    SistemaOperativo *-- SistemaArchivos
+    SistemaOperativo *-- GlobalClock
+    SistemaOperativo *-- Metricas
+    Computador --> ServicioES
+    Computador --> ServicioIntercambio
+    Computador --> PlanificadorMedianoPlazo
+    Computador --> Planificador
+    Computador o-- PCB
+    Computador ..> Cola
+    Disco *-- Bloque
+    Disco o-- SolicitudES
+    Disco --> PlanificadorDisco
+    Disco --> OyenteDisco
+    PlanificadorDisco ..> DecisionDisco
+    SolicitudES --> PCB
+    SistemaArchivos *-- NodoArchivo
+    NodoArchivo ..> Listas
+    PCB --> EstadoProceso
+    PCB --> MotivoBloqueo
+    PCB --> TipoOperacionES
+    Disco --> PoliticaDisco
+    SistemaOperativo --> ModoUsuario
+    SistemaOperativo ..> ArchivosJSON
+    main --> SistemaOperativo : solo observa
+    main *-- PanelColas
+    main *-- PanelDisco
+    main *-- PanelArchivos
+    main *-- PanelTablas
+    main ..> PanelMetricas
+    main ..> FormularioES
+```
+
+### 6.2 Diagrama de secuencia de una operacion de E/S (Andrea)
+Sigue una lectura desde que el usuario llena el formulario hasta que el proceso vuelve a Listo, incluyendo el caso en que el mediano plazo lo suspende mientras espera. Imagen para el PDF: `docs/uml_secuencia_es.png`.
+
+```mermaid
+sequenceDiagram
+    %% parte de Andrea: secuencia de una operacion de E/S (LEER /usuarios/data.csv)
+    autonumber
+    actor U as Usuario
+    participant F as FormularioES
+    participant SO as SistemaOperativo
+    participant C as Computador
+    participant R as GlobalClock
+    participant SA as SistemaArchivos
+    participant D as Disco
+    participant P as PlanificadorDisco
+
+    U->>F: llena el formulario y aprieta Crear proceso
+    F->>F: Validaciones (tipo y rango)
+    F->>SO: crearProceso(datos)
+    SO->>SA: tomar() y revisarOperacion (existe y permisos)
+    alt operacion no permitida (modo usuario)
+        SO-->>F: IllegalArgumentException con el motivo
+        F-->>U: mensaje en rojo, la simulacion sigue
+    else permitida
+        SO->>C: agregarProceso(PCB)  [Nuevo]
+    end
+
+    R->>C: onTick(ciclo)
+    C->>C: admitirInterno(): hay RAM, pasa a Listo
+    R->>C: onTick(ciclo + k)
+    C->>C: elegir(): Ejecucion
+    C->>C: ejecutar(): primera instruccion en modo SO
+    C->>SO: solicitar(PCB, ciclo)  (ServicioES)
+    SO->>SA: tomar(), revisa otra vez, arma el recorrido de bloques
+    SO->>D: encolar(SolicitudES)
+    SO-->>C: null (sin error)
+    C->>C: PCB a Bloqueados, motivo E/S de disco
+
+    opt no cabe un proceso nuevo en la RAM
+        C->>C: hacerEspacio(): el mediano plazo elige este bloqueado
+        C->>SO: suspender(PCB)  (ServicioIntercambio)
+        SO->>D: retirar(PCB) saca su solicitud de archivo
+        SO->>D: asignarSwap(n) y encolarSinContar(SUSPENDER)
+        Note over D: cuando termina SUSPENDER: Bloqueado/Suspendido,<br/>se libera su RAM y la solicitud de archivo vuelve a la cola
+    end
+
+    loop cada ciclo hasta terminar la solicitud
+        R->>D: onTick(ciclo)
+        D->>P: decidir(cola, cabezal, direccion)
+        P-->>D: DecisionDisco (solicitud a atender)
+        D->>D: mover el cabezal o leer un bloque
+    end
+    D->>SO: solicitudAtendida(s)  (OyenteDisco, ya sin el semaforo del disco)
+    SO->>SA: aplicar(s): el cambio en el arbol se hace aqui
+    SO->>C: despertar(PCB)
+    alt estaba en Bloqueados
+        C->>C: pasa a Listo
+    else estaba en Bloqueados/Suspendidos
+        C->>C: pasa a Listo/Suspendido (espera que el mediano plazo lo reactive)
+    end
+```
+
+## 7. Como ejecutar y probar (Diego)
+
+1. Abrir `AvilaOS` en NetBeans (Java 21) y ejecutar: la clase principal es `interfaz.inicio`.
+2. Cargar los dos JSON (vienen sugeridos los de `datos/`) y *Abrir el simulador*. *Iniciar* arranca el reloj.
+3. Para ver la suspension: cargar `datos/procesos_suspension.json`.
+4. Pruebas por consola (clic derecho > *Run File*): `pruebas.PruebaDisco`, `PruebaSuspension`, `PruebaPermisos`, `PruebaArchivos`.
