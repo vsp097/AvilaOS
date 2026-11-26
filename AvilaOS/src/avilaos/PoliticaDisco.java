@@ -12,7 +12,9 @@ public enum PoliticaDisco {
     FIFO("FIFO"),
     SSTF("SSTF"),
     SCAN("SCAN"),
-    C_SCAN("C-SCAN");
+    C_SCAN("C-SCAN"),
+    LOOK("LOOK"),
+    C_LOOK("C-LOOK");
 
     private final String etiqueta;
 
@@ -41,6 +43,10 @@ public enum PoliticaDisco {
                 return SCAN;
             case "CSCAN":
                 return C_SCAN;
+            case "LOOK":
+                return LOOK;
+            case "CLOOK":
+                return C_LOOK;
             default:
                 throw new IllegalArgumentException("La politica de disco '" + texto + "' no es valida");
         }
