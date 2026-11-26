@@ -88,3 +88,47 @@ AvilaOS separa el **hardware simulado**, el **sistema operativo** y la **interfa
 - **Su evento ocurre.** Cuando termina su solicitud de archivo, pasa de Bloqueado/Suspendido a **Listo/Suspendido**.
 - **Reactivar.** Cuando un proceso termina y libera RAM, el mediano plazo revisa los Listo/Suspendidos **antes** que los nuevos (ya fueron admitidos una vez y si no se les da prioridad se pueden quedar afuera para siempre). Se le aparta la RAM de una vez, se genera `REACTIVAR` (lee sus bloques del area de intercambio) y al terminar se liberan esos bloques y pasa a **Listo**. La memoria que libera una suspension es para el nuevo que la provoco.
 
+## 5. Conclusiones (Diego)
+
+Numeros reales de las pruebas por consola (`pruebas.PruebaDisco` y `pruebas.PruebaSuspension`).
+
+### 5.1 Ejemplo del anexo (cabezal en 50, 1 posicion por ciclo)
+
+| Politica | Orden | Desplazamiento |
+|---|---|---|
+| FIFO | 82, 17, 43, 140, 24, 16, 190 | 518 |
+| SSTF | 43, 24, 17, 16, 82, 140, 190 | 208 |
+| SCAN | 82, 140, 190, (199), 43, 24, 17, 16 | 332 |
+| C-SCAN | 82, 140, 190, (199, salta al 0), 16, 17, 24, 43 | 192 (sin contar el salto) |
+
+Los cuatro coinciden con el anexo del enunciado.
+
+### 5.2 Casos P1 a P4 con el sistema completo (8 procesos de E/S, cabezal a 5 posiciones por ciclo)
+
+| Politica | Orden de atencion | Desplazamiento | Espera promedio en la cola | Ciclos hasta terminar |
+|---|---|---|---|---|
+| FIFO | 95, 180, 34, 119, 11, 123, 62, 64 | 644 | 70.5 ciclos | 148 |
+| SSTF | 62, 64, 34, 11, 95, 119, 123, 180 | 236 | 24.4 ciclos | 66 |
+| SCAN | 62, 64, 95, 119, 123, 180, 34, 11 | 337 | 25.8 ciclos | 87 |
+| C-SCAN | 62, 64, 95, 119, 123, 180, 11, 34 | 183 | 22.0 ciclos | 57 |
+
+- **FIFO** es la peor en todo: el cabezal va y viene de un extremo al otro (50 a 95, a 180, a 34...). Recorre 3.5 veces mas que C-SCAN y la espera promedio triplica la de las demas. Es justa (atiende en orden de llegada) pero no tiene en cuenta donde esta el cabezal.
+- **SSTF** baja mucho el desplazamiento (236) y la espera (24.4), porque siempre va a la mas cercana. Su problema es la inanicion: si siguen llegando solicitudes cerca del cabezal, una lejana (aqui el 180) puede quedarse esperando mucho.
+- **SCAN** recorre un poco mas que SSTF (337) porque llega hasta el bloque 199 antes de regresar, aunque no haya nada ahi, pero ninguna solicitud espera mas de dos barridos: no hay inanicion.
+- **C-SCAN** dio el menor desplazamiento (183) y la menor espera (22.0) en este caso, porque despues del 180 salta al 0 sin contar el regreso y atiende 11 y 34 de subida. Ademas el tiempo de espera es mas parejo que en SCAN: los bloques del principio no tienen que esperar a que el cabezal baje todo el disco.
+- En resumen: para estas cargas, **C-SCAN y SSTF** son las mejores en desplazamiento y espera; **SCAN y C-SCAN** son las que evitan la inanicion. FIFO solo sirve como referencia.
+
+### 5.3 Efecto de la suspension (`datos/procesos_suspension.json`: RAM de 64 MB, 7 procesos que en total piden 120 MB, area de intercambio de 100 bloques)
+
+| Politica | Suspensiones | Reactivaciones | Desplazamiento | Espera promedio | Ciclos | Terminados |
+|---|---|---|---|---|---|---|
+| FIFO | 3 | 3 | 1093 | 101.3 | 401 | 7/7 |
+| SSTF | 2 | 2 | 607 | 49.6 | 248 | 7/7 |
+| SCAN | 2 | 2 | 779 | 65.6 | 283 | 7/7 |
+| C-SCAN | 2 | 2 | 480 | 54.8 | 223 | 7/7 |
+
+- **La suspension permite que terminen todos los procesos aunque no quepan juntos en la RAM.** Sin ella, P5 y P6 se quedarian en Nuevo hasta que algun proceso terminara.
+- **Tiene un costo alto en disco.** Cada suspension y cada reactivacion son solicitudes que escriben o leen 16 bloques del area de intercambio (bloques 200 a 299), asi que el cabezal tiene que ir y volver entre la zona de archivos y la de intercambio. Comparando con P1 a P4 (que tienen un proceso mas), el desplazamiento sube entre 1.7 veces (FIFO) y 2.6 veces (SSTF y C-SCAN) con la misma politica.
+- **La politica de disco cambia cuantas suspensiones hacen falta.** Con FIFO las solicitudes de intercambio esperan su turno detras de las de archivos; los procesos quedan mas tiempo bloqueados y hace falta suspender uno mas (3 contra 2). Con SSTF y C-SCAN el disco atiende antes lo que esta cerca y los procesos se liberan antes.
+- Al terminar todas las corridas el area de intercambio queda vacia (100 de 100 libres): cada bloque que ocupa un `SUSPENDER` lo libera su `REACTIVAR` o el final del proceso.
+
