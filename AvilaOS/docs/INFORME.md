@@ -348,6 +348,8 @@ classDiagram
         SSTF
         SCAN
         C_SCAN
+        LOOK
+        C_LOOK
     }
     class ModoUsuario {
         <<enumeration>>
