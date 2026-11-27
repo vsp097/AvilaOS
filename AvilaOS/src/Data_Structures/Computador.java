@@ -63,13 +63,11 @@ public class Computador implements ClockListener{
         medianoPlazo = m;
     }
 
-        //las metricas del sistema (una sola para todos) y el numero de este computador (0 es el primero)
+    //las metricas del sistema
     protected Metricas metricas;
-    protected int indice = 0;
 
-    public void setMetricas(Metricas m, int i) {
+    public void setMetricas(Metricas m) {
         metricas = m;
-        indice = i;
     }
 
     public Computador(){
@@ -450,11 +448,11 @@ public class Computador implements ClockListener{
             if (enEjecucion == null) {
                 modo = ModoCPU.SO;
                 if (metricas != null) {
-                    metricas.registrarCiclo(indice, false);
+                    metricas.registrarCiclo(false);
                 }
             } else {
                 if (metricas != null) {
-                    metricas.registrarCiclo(indice, true);
+                    metricas.registrarCiclo(true);
                 }
                 ejecutar();
             }
@@ -546,7 +544,7 @@ public class Computador implements ClockListener{
                         if (!p.getYaEjecuto()) {
                 p.setYaEjecuto(true);
                 if (metricas != null) {
-                    metricas.registrarRespuesta(indice, ciclo - p.getLlegada());
+                    metricas.registrarRespuesta(ciclo - p.getLlegada());
                 }
             }
             registrar(nombre + " selecciona el proceso " + p.getname());
@@ -601,10 +599,10 @@ public class Computador implements ClockListener{
         boolean vencio = p.getTuvoDeadline() && p.getdeadline() == 0;
         if (metricas != null) {
             if (!vencio) {
-                metricas.registrarTermino(indice, p.getCiclosCPU(), ciclo - p.getLlegada());
+                metricas.registrarTermino(p.getCiclosCPU(), ciclo - p.getLlegada());
             }
             if (p.getTuvoDeadline()) {
-                metricas.registrarDeadline(indice, !vencio);
+                metricas.registrarDeadline(!vencio);
             }
         }
     }

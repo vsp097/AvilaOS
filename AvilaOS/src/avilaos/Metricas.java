@@ -8,62 +8,53 @@ import java.util.concurrent.Semaphore;
  */
 public class Metricas {
 
-    public static final int MAX_COMPUTADORES = 10;
-    public static final int MAX_BUFFERS = 20;
-    //cuantas muestras guardo para la grafica, cuando se llena se pierden las mas viejas
+    //cuantas muestras guardo para las graficas de la cpu, cuando se llena se pierden las mas viejas
     private static final int MAX_MUESTRAS = 500;
-    //cada cuantos ciclos saco un punto de la grafica
+    //cada cuantos ciclos saco un punto de esas graficas
     private static final int CICLOS_POR_MUESTRA = 5;
+    //para la grafica del cabezal se guarda un punto por ciclo
+    private static final int MAX_MUESTRAS_DISCO = 5000;
 
     //semaforo para que el reloj y la ventana no usen los numeros al mismo tiempo
     private final Semaphore mutex = new Semaphore(1);
 
-    //datos por computador (el computador 1 es el indice 0)
-    private long[] ciclosTotales = new long[MAX_COMPUTADORES];
-    private long[] ciclosOcupada = new long[MAX_COMPUTADORES];
-    private long[] completados = new long[MAX_COMPUTADORES];
-    private long[] sumaRespuesta = new long[MAX_COMPUTADORES];
-    private long[] cantidadRespuesta = new long[MAX_COMPUTADORES];
-    private long[] deadlineCumplidos = new long[MAX_COMPUTADORES];
-    private long[] deadlineTotales = new long[MAX_COMPUTADORES];
+    //----- metricas del proyecto 1, ahora de un solo computador -----
+    private long ciclosTotales = 0;
+    private long ciclosOcupada = 0;
+    private long completados = 0;
+    private long sumaRespuesta = 0;
+    private long cantidadRespuesta = 0;
+    private long deadlineCumplidos = 0;
+    private long deadlineTotales = 0;
 
     //para la equidad: suma de x, suma de x al cuadrado y cuantos procesos
-    private double[] sumaX = new double[MAX_COMPUTADORES];
-    private double[] sumaX2 = new double[MAX_COMPUTADORES];
-    private long[] cantidadX = new long[MAX_COMPUTADORES];
+    private double sumaX = 0;
+    private double sumaX2 = 0;
+    private long cantidadX = 0;
 
-    //para la grafica: utilizacion de cada ventana de ciclos
-    private int[] cicloEnVentana = new int[MAX_COMPUTADORES];
-    private int[] ocupadoEnVentana = new int[MAX_COMPUTADORES];
-    private double[][] historial = new double[MAX_COMPUTADORES][MAX_MUESTRAS];
-    private int[] inicioHistorial = new int[MAX_COMPUTADORES];
-    private int[] cantidadHistorial = new int[MAX_COMPUTADORES];
+    //para la grafica de utilizacion: lo que va de la ventana de ciclos actual
+    private int cicloEnVentana = 0;
+    private int ocupadoEnVentana = 0;
 
-    //para las otras graficas: throughput, tasa de exito y tiempo de espera de todo el sistema
-    public static final int THROUGHPUT = 0;
-    public static final int EXITO = 1;
-    public static final int ESPERA = 2;
-    private double[][] historialSistema = new double[3][MAX_MUESTRAS];
-    private int inicioSistema = 0;
-    private int cantidadSistema = 0;
+    //historiales de las graficas: utilizacion, throughput, tasa de exito y tiempo de espera
+    public static final int UTILIZACION = 0;
+    public static final int THROUGHPUT = 1;
+    public static final int EXITO = 2;
+    public static final int ESPERA = 3;
+    private double[][] historial = new double[4][MAX_MUESTRAS];
+    private int inicioHistorial = 0;
+    private int cantidadHistorial = 0;
 
-    //suspension: cuantas veces el disco escribio o trajo un proceso del area de intercambio
+    //----- suspension -----
     private long suspensiones = 0;
     private long reactivaciones = 0;
 
-    //datos por buffer
-    private long[] producidos = new long[MAX_BUFFERS];
-    private long[] consumidos = new long[MAX_BUFFERS];
-    private long[] sumaBloqueo = new long[MAX_BUFFERS];
-    private long[] cantidadBloqueo = new long[MAX_BUFFERS];
-
-    private boolean computadorValido(int c) {
-        return c >= 0 && c < MAX_COMPUTADORES;
-    }
-
-    private boolean bufferValido(int b) {
-        return b >= 0 && b < MAX_BUFFERS;
-    }
+    //----- disco: desplazamiento acumulado del cabezal en cada ciclo y la politica que estaba activa -----
+    private long[] cicloDisco = new long[MAX_MUESTRAS_DISCO];
+    private long[] desplazamientoDisco = new long[MAX_MUESTRAS_DISCO];
+    private PoliticaDisco[] politicaDisco = new PoliticaDisco[MAX_MUESTRAS_DISCO];
+    private int inicioDisco = 0;
+    private int cantidadDisco = 0;
 
     private double dividir(double a, double b) {
         if (b == 0) {
@@ -74,35 +65,21 @@ public class Metricas {
 
     //----- avisos que le hace el sistema a las metricas -----
 
-    //se llama una vez por ciclo en cada computador, cpuOcupada es true si habia un proceso en la cpu
-    public void registrarCiclo(int c, boolean cpuOcupada) {
-        if (!computadorValido(c)) {
-            return;
-        }
+    //se llama una vez por ciclo, cpuOcupada es true si habia un proceso en la cpu
+    public void registrarCiclo(boolean cpuOcupada) {
         mutex.acquireUninterruptibly();
         try {
-            ciclosTotales[c]++;
-            cicloEnVentana[c]++;
+            ciclosTotales++;
+            cicloEnVentana++;
             if (cpuOcupada) {
-                ciclosOcupada[c]++;
-                ocupadoEnVentana[c]++;
+                ciclosOcupada++;
+                ocupadoEnVentana++;
             }
-            //cuando se completa una ventana guardo un punto para la grafica
-            if (cicloEnVentana[c] == CICLOS_POR_MUESTRA) {
-                double u = ocupadoEnVentana[c] * 100.0 / CICLOS_POR_MUESTRA;
-                int pos = (inicioHistorial[c] + cantidadHistorial[c]) % MAX_MUESTRAS;
-                if (cantidadHistorial[c] < MAX_MUESTRAS) {
-                    cantidadHistorial[c]++;
-                } else {
-                    inicioHistorial[c] = (inicioHistorial[c] + 1) % MAX_MUESTRAS;
-                }
-                historial[c][pos] = u;
-                cicloEnVentana[c] = 0;
-                ocupadoEnVentana[c] = 0;
-                //el computador 1 siempre existe, asi que con el saco tambien el punto del sistema
-                if (c == 0) {
-                    guardarMuestraSistema();
-                }
+            //cuando se completa una ventana guardo un punto para las graficas
+            if (cicloEnVentana == CICLOS_POR_MUESTRA) {
+                guardarMuestra(ocupadoEnVentana * 100.0 / CICLOS_POR_MUESTRA);
+                cicloEnVentana = 0;
+                ocupadoEnVentana = 0;
             }
         } finally {
             mutex.release();
@@ -110,88 +87,41 @@ public class Metricas {
     }
 
     //cuando un proceso entra por primera vez a la cpu: ciclos que espero desde que llego
-    public void registrarRespuesta(int c, long ciclosRespuesta) {
-        if (!computadorValido(c)) {
-            return;
-        }
+    public void registrarRespuesta(long ciclosRespuesta) {
         mutex.acquireUninterruptibly();
         try {
-            sumaRespuesta[c] += ciclosRespuesta;
-            cantidadRespuesta[c]++;
+            sumaRespuesta += ciclosRespuesta;
+            cantidadRespuesta++;
         } finally {
             mutex.release();
         }
     }
 
     //cuando un proceso termina normal: ciclos que uso la cpu y ciclos que estuvo en el sistema
-    public void registrarTermino(int c, long ciclosCPU, long ciclosEnSistema) {
-        if (!computadorValido(c)) {
-            return;
-        }
+    public void registrarTermino(long ciclosCPU, long ciclosEnSistema) {
         mutex.acquireUninterruptibly();
         try {
-            completados[c]++;
+            completados++;
             if (ciclosEnSistema > 0) {
                 //x es la fraccion del tiempo que el proceso estuvo realmente en la cpu
                 double x = (double) ciclosCPU / ciclosEnSistema;
-                sumaX[c] += x;
-                sumaX2[c] += x * x;
-                cantidadX[c]++;
+                sumaX += x;
+                sumaX2 += x * x;
+                cantidadX++;
             }
         } finally {
             mutex.release();
         }
     }
 
-    //se llama cuando termina un proceso que tenia deadline (mayor que 0), cumplio es false si se le acabo
-    public void registrarDeadline(int c, boolean cumplio) {
-        if (!computadorValido(c)) {
-            return;
-        }
+    //se llama cuando termina un proceso que tenia deadline, cumplio es false si se le acabo
+    public void registrarDeadline(boolean cumplio) {
         mutex.acquireUninterruptibly();
         try {
-            deadlineTotales[c]++;
+            deadlineTotales++;
             if (cumplio) {
-                deadlineCumplidos[c]++;
+                deadlineCumplidos++;
             }
-        } finally {
-            mutex.release();
-        }
-    }
-
-    public void registrarProducido(int b) {
-        if (!bufferValido(b)) {
-            return;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            producidos[b]++;
-        } finally {
-            mutex.release();
-        }
-    }
-
-    public void registrarConsumido(int b) {
-        if (!bufferValido(b)) {
-            return;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            consumidos[b]++;
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //cuando un proceso se despierta de un semaforo del buffer: cuantos ciclos estuvo bloqueado
-    public void registrarBloqueo(int b, long ciclosBloqueado) {
-        if (!bufferValido(b)) {
-            return;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            sumaBloqueo[b] += ciclosBloqueado;
-            cantidadBloqueo[b]++;
         } finally {
             mutex.release();
         }
@@ -217,6 +147,86 @@ public class Metricas {
         }
     }
 
+    //una muestra por ciclo: cuanto lleva movido el cabezal y con que politica
+    public void registrarDisco(long ciclo, long desplazamiento, PoliticaDisco politica) {
+        mutex.acquireUninterruptibly();
+        try {
+            int pos = (inicioDisco + cantidadDisco) % MAX_MUESTRAS_DISCO;
+            if (cantidadDisco < MAX_MUESTRAS_DISCO) {
+                cantidadDisco++;
+            } else {
+                inicioDisco = (inicioDisco + 1) % MAX_MUESTRAS_DISCO;
+            }
+            cicloDisco[pos] = ciclo;
+            desplazamientoDisco[pos] = desplazamiento;
+            politicaDisco[pos] = politica;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //----- resultados del computador -----
+
+    public double getUtilizacion() {
+        mutex.acquireUninterruptibly();
+        try {
+            return dividir(ciclosOcupada * 100.0, ciclosTotales);
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //procesos terminados por ciclo
+    public double getThroughput() {
+        mutex.acquireUninterruptibly();
+        try {
+            return throughput();
+        } finally {
+            mutex.release();
+        }
+    }
+
+    public double getRespuestaPromedio() {
+        mutex.acquireUninterruptibly();
+        try {
+            return respuesta();
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //porcentaje de procesos con deadline que lo cumplieron
+    public double getCumplimientoDeadline() {
+        mutex.acquireUninterruptibly();
+        try {
+            return exito();
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //indice de jain: 1 es lo mas justo, devuelve 0 si todavia no termino ningun proceso
+    public double getEquidad() {
+        mutex.acquireUninterruptibly();
+        try {
+            if (cantidadX == 0 || sumaX2 == 0) {
+                return 0;
+            }
+            return (sumaX * sumaX) / (cantidadX * sumaX2);
+        } finally {
+            mutex.release();
+        }
+    }
+
+    public long getCompletados() {
+        mutex.acquireUninterruptibly();
+        try {
+            return completados;
+        } finally {
+            mutex.release();
+        }
+    }
+
     public long getSuspensiones() {
         mutex.acquireUninterruptibly();
         try {
@@ -235,307 +245,55 @@ public class Metricas {
         }
     }
 
-    //----- resultados por computador -----
-
-    public double getUtilizacion(int c) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return dividir(ciclosOcupada[c] * 100.0, ciclosTotales[c]);
-        } finally {
-            mutex.release();
-        }
+    //sin el semaforo, para usarlos desde adentro cuando ya esta tomado
+    private double throughput() {
+        return dividir(completados, ciclosTotales);
     }
 
-    //procesos terminados por ciclo
-    public double getThroughput(int c) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return dividir(completados[c], ciclosTotales[c]);
-        } finally {
-            mutex.release();
-        }
+    private double respuesta() {
+        return dividir(sumaRespuesta, cantidadRespuesta);
     }
 
-    public double getRespuestaPromedio(int c) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return dividir(sumaRespuesta[c], cantidadRespuesta[c]);
-        } finally {
-            mutex.release();
-        }
+    private double exito() {
+        return dividir(deadlineCumplidos * 100.0, deadlineTotales);
     }
 
-    //porcentaje de procesos con deadline que lo cumplieron
-    public double getCumplimientoDeadline(int c) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return dividir(deadlineCumplidos[c] * 100.0, deadlineTotales[c]);
-        } finally {
-            mutex.release();
-        }
-    }
+    //----- datos para las graficas del computador -----
 
-    //indice de jain: 1 es lo mas justo, devuelve 0 si todavia no termino ningun proceso
-    public double getEquidad(int c) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return jain(sumaX[c], sumaX2[c], cantidadX[c]);
-        } finally {
-            mutex.release();
-        }
-    }
-
-    public long getCompletados(int c) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return completados[c];
-        } finally {
-            mutex.release();
-        }
-    }
-
-    private double jain(double suma, double sumaCuadrados, long n) {
-        if (n == 0 || sumaCuadrados == 0) {
-            return 0;
-        }
-        return (suma * suma) / (n * sumaCuadrados);
-    }
-
-    //----- resultados de todo el sistema -----
-
-    public double getUtilizacionSistema() {
-        mutex.acquireUninterruptibly();
-        try {
-            long ocupada = 0;
-            long total = 0;
-            for (int i = 0; i < MAX_COMPUTADORES; i++) {
-                ocupada += ciclosOcupada[i];
-                total += ciclosTotales[i];
-            }
-            return dividir(ocupada * 100.0, total);
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //como todos los computadores avanzan juntos, uso los ciclos del que mas lleva
-    public double getThroughputSistema() {
-        mutex.acquireUninterruptibly();
-        try {
-            return throughputSistema();
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //sin el semaforo, para usarlo desde adentro cuando ya esta tomado
-    private double throughputSistema() {
-        long terminados = 0;
-        long ciclos = 0;
-        for (int i = 0; i < MAX_COMPUTADORES; i++) {
-            terminados += completados[i];
-            if (ciclosTotales[i] > ciclos) {
-                ciclos = ciclosTotales[i];
-            }
-        }
-        return dividir(terminados, ciclos);
-    }
-
-    public double getRespuestaPromedioSistema() {
-        mutex.acquireUninterruptibly();
-        try {
-            return respuestaSistema();
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //sin el semaforo, para usarlo desde adentro cuando ya esta tomado
-    private double respuestaSistema() {
-        long suma = 0;
-        long cantidad = 0;
-        for (int i = 0; i < MAX_COMPUTADORES; i++) {
-            suma += sumaRespuesta[i];
-            cantidad += cantidadRespuesta[i];
-        }
-        return dividir(suma, cantidad);
-    }
-
-    public double getCumplimientoDeadlineSistema() {
-        mutex.acquireUninterruptibly();
-        try {
-            return exitoSistema();
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //sin el semaforo, para usarlo desde adentro cuando ya esta tomado
-    private double exitoSistema() {
-        long cumplidos = 0;
-        long total = 0;
-        for (int i = 0; i < MAX_COMPUTADORES; i++) {
-            cumplidos += deadlineCumplidos[i];
-            total += deadlineTotales[i];
-        }
-        return dividir(cumplidos * 100.0, total);
-    }
-
-    public double getEquidadSistema() {
-        mutex.acquireUninterruptibly();
-        try {
-            double suma = 0;
-            double sumaCuadrados = 0;
-            long n = 0;
-            for (int i = 0; i < MAX_COMPUTADORES; i++) {
-                suma += sumaX[i];
-                sumaCuadrados += sumaX2[i];
-                n += cantidadX[i];
-            }
-            return jain(suma, sumaCuadrados, n);
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //----- resultados por buffer -----
-
-    public long getProducidos(int b) {
-        if (!bufferValido(b)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return producidos[b];
-        } finally {
-            mutex.release();
-        }
-    }
-
-    public long getConsumidos(int b) {
-        if (!bufferValido(b)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return consumidos[b];
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //ciclos promedio que los procesos pasan bloqueados en los semaforos de ese buffer
-    public double getBloqueoPromedio(int b) {
-        if (!bufferValido(b)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return dividir(sumaBloqueo[b], cantidadBloqueo[b]);
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //igual pero juntando todos los buffers
-    public double getBloqueoPromedioSistema() {
-        mutex.acquireUninterruptibly();
-        try {
-            long suma = 0;
-            long cantidad = 0;
-            for (int i = 0; i < MAX_BUFFERS; i++) {
-                suma += sumaBloqueo[i];
-                cantidad += cantidadBloqueo[i];
-            }
-            return dividir(suma, cantidad);
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //----- datos para la grafica -----
-
-    //cuantos puntos hay guardados de ese computador
-    public int getCantidadMuestras(int c) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            return cantidadHistorial[c];
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //utilizacion del punto i (0 es el mas viejo), cada punto resume CICLOS_POR_MUESTRA ciclos
-    public double getMuestra(int c, int i) {
-        if (!computadorValido(c)) {
-            return 0;
-        }
-        mutex.acquireUninterruptibly();
-        try {
-            if (i < 0 || i >= cantidadHistorial[c]) {
-                return 0;
-            }
-            return historial[c][(inicioHistorial[c] + i) % MAX_MUESTRAS];
-        } finally {
-            mutex.release();
-        }
-    }
-
-    //guarda como van el throughput, la tasa de exito y la espera en este momento
     //se llama con el mutex ya tomado
-    private void guardarMuestraSistema() {
-        int pos = (inicioSistema + cantidadSistema) % MAX_MUESTRAS;
-        if (cantidadSistema < MAX_MUESTRAS) {
-            cantidadSistema++;
+    private void guardarMuestra(double utilizacion) {
+        int pos = (inicioHistorial + cantidadHistorial) % MAX_MUESTRAS;
+        if (cantidadHistorial < MAX_MUESTRAS) {
+            cantidadHistorial++;
         } else {
-            inicioSistema = (inicioSistema + 1) % MAX_MUESTRAS;
+            inicioHistorial = (inicioHistorial + 1) % MAX_MUESTRAS;
         }
-        historialSistema[THROUGHPUT][pos] = throughputSistema();
-        historialSistema[EXITO][pos] = exitoSistema();
-        historialSistema[ESPERA][pos] = respuestaSistema();
+        historial[UTILIZACION][pos] = utilizacion;
+        historial[THROUGHPUT][pos] = throughput();
+        historial[EXITO][pos] = exito();
+        historial[ESPERA][pos] = respuesta();
     }
 
-    public int getCantidadMuestrasSistema() {
+    public int getCantidadMuestras() {
         mutex.acquireUninterruptibly();
         try {
-            return cantidadSistema;
+            return cantidadHistorial;
         } finally {
             mutex.release();
         }
     }
 
-    //cual es THROUGHPUT, EXITO o ESPERA; i es el punto (0 es el mas viejo)
-    public double getMuestraSistema(int cual, int i) {
-        if (cual < 0 || cual > 2) {
+    //cual es UTILIZACION, THROUGHPUT, EXITO o ESPERA; i es el punto (0 es el mas viejo)
+    public double getMuestra(int cual, int i) {
+        if (cual < 0 || cual >= historial.length) {
             return 0;
         }
         mutex.acquireUninterruptibly();
         try {
-            if (i < 0 || i >= cantidadSistema) {
+            if (i < 0 || i >= cantidadHistorial) {
                 return 0;
             }
-            return historialSistema[cual][(inicioSistema + i) % MAX_MUESTRAS];
+            return historial[cual][(inicioHistorial + i) % MAX_MUESTRAS];
         } finally {
             mutex.release();
         }
@@ -543,5 +301,35 @@ public class Metricas {
 
     public int getCiclosPorMuestra() {
         return CICLOS_POR_MUESTRA;
+    }
+
+    //----- datos para la grafica del cabezal -----
+
+    public int getCantidadMuestrasDisco() {
+        mutex.acquireUninterruptibly();
+        try {
+            return cantidadDisco;
+        } finally {
+            mutex.release();
+        }
+    }
+
+    //copia de las muestras del disco para dibujarlas sin tener el semaforo tomado
+    //ciclos, desplazamientos y politicas tienen que tener el largo de getCantidadMuestrasDisco()
+    //devuelve cuantas copio
+    public int copiarMuestrasDisco(long[] ciclos, long[] desplazamientos, PoliticaDisco[] politicas) {
+        mutex.acquireUninterruptibly();
+        try {
+            int n = Math.min(cantidadDisco, Math.min(ciclos.length, Math.min(desplazamientos.length, politicas.length)));
+            for (int i = 0; i < n; i++) {
+                int pos = (inicioDisco + i) % MAX_MUESTRAS_DISCO;
+                ciclos[i] = cicloDisco[pos];
+                desplazamientos[i] = desplazamientoDisco[pos];
+                politicas[i] = politicaDisco[pos];
+            }
+            return n;
+        } finally {
+            mutex.release();
+        }
     }
 }
