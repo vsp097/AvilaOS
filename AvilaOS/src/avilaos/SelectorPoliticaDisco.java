@@ -21,6 +21,10 @@ public class SelectorPoliticaDisco {
                 return new DiscoSCAN();
             case C_SCAN:
                 return new DiscoCSCAN();
+            case LOOK:
+                return new DiscoLOOK();
+            case C_LOOK:
+                return new DiscoCLOOK();
             default:
                 throw new IllegalArgumentException("Politica de disco todavia no hecha: " + politica);
         }
