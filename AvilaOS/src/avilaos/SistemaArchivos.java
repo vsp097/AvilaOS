@@ -183,7 +183,7 @@ public class SistemaArchivos {
         switch (op) {
             case CREAR:
                 if (creaDirectorio) {
-                    return "solo el administrador puede crear directorios";
+                    return "en modo usuario no se pueden crear directorios, solo el administrador puede";
                 }
                 if (!propio) {
                     return "el usuario " + usuario + " solo puede crear archivos dentro de sus propios directorios y "
@@ -192,13 +192,14 @@ public class SistemaArchivos {
                 return null;
             case LEER:
                 if (!propio && nodo.getPermiso() == Permiso.PRIVADO) {
-                    return nodo.getRuta() + " es privado y su dueno es " + nodo.getDueno();
+                    return "el usuario " + usuario + " no puede leer " + nodo.getRuta() + " porque es privado y su dueno es "
+                            + nodo.getDueno();
                 }
                 return null;
             case ACTUALIZAR:
             case ELIMINAR:
                 if (nodo.esDirectorio()) {
-                    return "solo el administrador puede modificar o eliminar directorios";
+                    return "en modo usuario no se pueden modificar ni eliminar directorios, solo el administrador puede";
                 }
                 if (!propio) {
                     return "el usuario " + usuario + " no puede modificar " + nodo.getRuta() + " porque es de "

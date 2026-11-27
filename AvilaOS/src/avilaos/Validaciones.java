@@ -31,7 +31,16 @@ public class Validaciones {
         try {
             valor = Integer.parseInt(texto.trim());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("El campo " + campo + " debe ser un numero entero");
+            //se dice que fue lo que escribieron para que se entienda el error
+            if (texto.trim().matches("-?[0-9]+[.,][0-9]*")) {
+                throw new IllegalArgumentException("El campo " + campo + " debe ser un numero entero, sin decimales (escribiste '"
+                        + texto.trim() + "')");
+            }
+            if (texto.trim().matches("-?[0-9]+")) {
+                throw new IllegalArgumentException("El campo " + campo + " tiene un numero demasiado grande");
+            }
+            throw new IllegalArgumentException("El campo " + campo + " debe ser un numero entero (escribiste '"
+                    + texto.trim() + "')");
         }
         if (valor < min || valor > max) {
             throw new IllegalArgumentException("El campo " + campo + " debe estar entre " + min + " y " + max);
@@ -48,15 +57,21 @@ public class Validaciones {
         try {
             valor = Float.parseFloat(texto.trim());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("El campo " + campo + " debe ser un numero valido");
+            throw new IllegalArgumentException("El campo " + campo + " debe ser un numero valido (escribiste '"
+                    + texto.trim() + "'), usa punto para los decimales");
         }
         //parseFloat deja pasar "NaN" e "Infinity", asi que los reviso aparte
         if (Float.isNaN(valor) || Float.isInfinite(valor)) {
             throw new IllegalArgumentException("El campo " + campo + " debe ser un numero valido");
         }
         if (valor < min || valor > max) {
-            throw new IllegalArgumentException("El campo " + campo + " debe estar entre " + min + " y " + max);
+            throw new IllegalArgumentException("El campo " + campo + " debe estar entre " + numero(min) + " y " + numero(max));
         }
         return valor;
+    }
+
+    //escribe 1 en vez de 1.0 cuando el numero no tiene decimales
+    private static String numero(float f) {
+        return f == (long) f ? String.valueOf((long) f) : String.valueOf(f);
     }
 }
