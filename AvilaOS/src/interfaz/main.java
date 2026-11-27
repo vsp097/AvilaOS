@@ -4,1026 +4,567 @@
  */
 package interfaz;
 
-import Data_Structures.Cola;
+//--- bloque a: imports ---
 import Data_Structures.Computador;
-import Data_Structures.Listas;
-import Data_Structures.Nodo;
 import Data_Structures.PCB;
-import avilaos.Buffer;
-import avilaos.Configuracion;
-import avilaos.GlobalClock;
-import avilaos.LogEventos;
-import avilaos.Metricas;
-import avilaos.PoliticaPlanificacion;
-import avilaos.SelectorPolitica;
-import avilaos.SolicitudProceso;
+import avilaos.Disco;
+import avilaos.InfoNodo;
+import avilaos.ModoUsuario;
+import avilaos.PoliticaDisco;
+import avilaos.SistemaOperativo;
+import avilaos.TipoOperacionES;
 import avilaos.Validaciones;
-import java.awt.BorderLayout;
+import java.awt.Color;
+import java.io.IOException;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.filechooser.FileNameExtensionFilter;
+//--- fin del bloque a: imports ---
+
 /**
  *
- * @author diego
+ * @author vyckh
  */
+//la ventana principal: mira al sistema operativo y lo dibuja, y le pasa lo que pide el usuario
+//aqui no hay logica del simulador
 public class main extends javax.swing.JFrame {
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(main.class.getName());
-    private Computador computador1;
-    private Computador computador2;
-    //todos los computadores del reloj; el 1 y el 2 se ven aqui y del 3 en adelante en su propia ventana
-    private Listas<Computador> computadores;
-    private Listas<VentanaComputador> ventanasExtra = null;
-    //los paneles de politica del computador 1 y 2
-    private Panelpolitica pol1;
-    private Panelpolitica pol2;
-    private GlobalClock gC;
-    private LogEventos log;
+    //--- bloque a: campos ---
+    private SistemaOperativo so;
+    private Computador computador;
+    private Disco disco;
+
+    //las ventanas que se abren con los botones de abajo, se crean la primera vez que se piden
+    private Panelpolitica panelPolitica;
     private Panellog panelLog;
-    private panelPCB pcbComputador1;
-    private panelPCB pcbComputador2;
-    private Listas<PanelBuffer> panelesBuffer = null;
-    //los buffers creados, en el mismo orden en que los pide el formulario
-    private Listas<Buffer> buffers = null;
-    //el formulario de crear procesos y su ventana, se guardan para reusarlos
-    private FormularioProceso formulario;
-    private VistaProceso ventanaProceso;
-    //el panel de crear buffers y su ventana
-    private VistaBuffers panelCrearBuffers;
-    private VentanaBuffers ventanaBuffers;
-    //los procesos que se ven en cada una de las 8 listas, en el mismo orden que la lista
-    private PCB[][] enLista = new PCB[8][];
-    //el proceso que el usuario escogio con un clic; si no hay, se sigue al de la CPU
-    private PCB seleccionado1;
-    private PCB seleccionado2;
-    //el panel de configuracion y su ventana
-    private VistaConfiguracion panelConfiguracion;
-    private VentanaConfiguracion ventanaConfiguracion;
-    //unas solas metricas para los dos computadores y para el panel
-    private Metricas metricas = new Metricas();
     private PanelMetricas panelMetricas;
-    //con cuantos buffers y computadores se armo el panel de metricas
-    private int buffersEnMetricas = -1;
-    private int computadoresEnMetricas = -1;
-    //las ventanas del log y de las metricas
+    private FormularioES formulario;
+    private JDialog ventanaPolitica;
     private VentanaLog ventanaLog;
     private VentanaMetricas ventanaMetricas;
+
+    //el proceso que el usuario escogio con un clic; si no hay, se muestra el que esta en la CPU
+    private PCB seleccionado;
+    //true mientras la ventana cambia un selector por su cuenta, para que no cuente como un clic
+    private boolean ajustando = false;
+    private Timer refresco;
+    //--- fin del bloque a: campos ---
 
     /**
      * Creates new form main
      */
-    public main(Data_Structures.Computador c, Computador c2, GlobalClock g) {
-        gC = g;
+    public main(SistemaOperativo sistema) {
         initComponents();
-        computador1 = c;
-        computador2 = c2;
-        computadores = new Listas<>(new Nodo<Computador>(computador1));
-        computadores.insertar(new Nodo<Computador>(computador2));
-        //la lista de computadores tiene que estar puesta antes de arrancar el reloj
-        gC.setClocklist(computadores);
-        Cpu1.setText("CPU: " + c.getCPU());
-        CPU2.setText("CPU: " + c2.getCPU());
+        //--- bloque b ---
+        so = sistema;
+        computador = so.getComputador();
+        disco = so.getDisco();
+        //el reloj queda detenido hasta que aprieten Iniciar
+        so.pausar();
+        so.iniciar();
 
-        //un solo log para los dos computadores
-        log = new LogEventos();
-        c.setLog(log);
-        c2.setLog(log);
-        computador1.setNombre("Computador 1");
-        computador2.setNombre("Computador 2");
-        //los dos reportan a la misma Metricas, cada uno con su numero
-        computador1.setMetricas(metricas, 0);
-        computador2.setMetricas(metricas, 1);
-        armarPaneles();
+        panelColas.setSeleccionListener(p -> seleccionado = (p == seleccionado ? null : p));
+        panelArchivos.setAccionListener(this::abrirFormulario);
 
-        //al hacer clic en una cola se puede ver el PCB de ese proceso
-        for (int i = 0; i < enLista.length; i++) {
-            enLista[i] = new PCB[0];
+        txtDuracion.setText(String.valueOf(so.getDuracionCiclo()));
+        txtVelocidad.setText(String.valueOf(disco.getVelocidad()));
+        ajustando = true;
+        PoliticaDisco[] politicas = PoliticaDisco.values();
+        for (int i = 0; i < politicas.length; i++) {
+            cmbPoliticaDisco.addItem(politicas[i]);
         }
-        conectarLista(jList2, 0, 1);
-        conectarLista(jList3, 1, 1);
-        conectarLista(jList5, 2, 1);
-        conectarLista(jList6, 3, 1);
-        conectarLista(jList4, 4, 2);
-        conectarLista(jList1, 5, 2);
-        conectarLista(jList7, 6, 2);
-        conectarLista(jList8, 7, 2);
+        ModoUsuario[] modos = ModoUsuario.values();
+        for (int i = 0; i < modos.length; i++) {
+            cmbModo.addItem(modos[i]);
+        }
+        cmbPoliticaDisco.setSelectedItem(disco.getPolitica());
+        String[] usuarios = so.getUsuarios();
+        for (int i = 0; i < usuarios.length; i++) {
+            cmbUsuario.addItem(usuarios[i]);
+        }
+        cmbUsuario.setEnabled(false);
+        ajustando = false;
+        mostrarModoUsuario();
 
-        txtDuracion.setText("1000");
-        //la ventana abre centrada y con un tamano comodo
-        setSize(1280, 760);
+        setSize(1440, 860);
         setLocationRelativeTo(null);
+        //la ventana se refresca sola varias veces por segundo, asi tambien se actualiza con el reloj en pausa
+        refresco = new Timer(150, e -> refrescar());
+        refresco.start();
+        refrescar();
+        //--- fin del bloque b ---
+    }
 
-        gC.setClockListener(this::alCiclo);
-        //el reloj arranca al final, cuando ya tiene todo conectado
-        if (!gC.isAlive()) {
-            gC.start();
+    //--- bloque c ---
+    //----- refresco: la ventana pide copias y las dibuja -----
+
+    private void refrescar() {
+        long ciclo = so.getCiclo();
+        lblCiclo.setText(String.valueOf(ciclo));
+        panelColas.mostrar(computador.copiarColas());
+        panelPcb.mostrar(seleccionado != null ? seleccionado : computador.getEnEjecucion());
+        lblModoCpu.setText(String.valueOf(computador.getmode()));
+        int total = (int) computador.getRamt();
+        int usada = (int) (computador.getRamt() - computador.getRam());
+        barraRam.setMaximum(total <= 0 ? 1 : total);
+        barraRam.setValue(usada);
+        lblRam.setText(usada + " / " + total + " MB");
+
+        InfoNodo[] arbol = so.copiarArbol();
+        panelArchivos.mostrar(arbol, so.getVersionArchivos());
+        panelTablas.mostrarAsignacion(arbol);
+        panelTablas.mostrarCola(disco, ciclo);
+        panelDisco.mostrar(disco);
+        lblUltimo.setText(so.getLog().getUltimo());
+
+        //si la politica cambio por otro lado, el selector se pone al dia
+        if (cmbPoliticaDisco.getSelectedItem() != disco.getPolitica() && !cmbPoliticaDisco.isPopupVisible()) {
+            ajustando = true;
+            cmbPoliticaDisco.setSelectedItem(disco.getPolitica());
+            ajustando = false;
         }
     }
 
-    //arma los paneles que viven dentro de la ventana y los que van en otras ventanas
-    private void armarPaneles() {
-        panelLog = new Panellog(log);
-        pcbComputador1 = new panelPCB();
-        pcbComputador2 = new panelPCB();
-        pcb1Host.add(pcbComputador1, BorderLayout.CENTER);
-        pcb2Host.add(pcbComputador2, BorderLayout.CENTER);
-        //las colas siempre tienen espacio aunque la pantalla sea pequena o tenga letras grandes
-        java.awt.Dimension alturaColas = new java.awt.Dimension(100, 150);
-        colas1.setPreferredSize(alturaColas);
-        colas2.setPreferredSize(alturaColas);
-        colas1.setMinimumSize(alturaColas);
-        colas2.setMinimumSize(alturaColas);
-        panelBuffers.setPreferredSize(new java.awt.Dimension(100, 160));
-        //si aun asi no cabe todo, la parte de los computadores se puede bajar con la rueda del raton
-        getContentPane().remove(panelComputadores);
-        JScrollPane scrollComputadores = new JScrollPane(panelComputadores);
-        scrollComputadores.setBorder(null);
-        scrollComputadores.getVerticalScrollBar().setUnitIncrement(16);
-        getContentPane().add(scrollComputadores, BorderLayout.CENTER);
-        //cada computador tiene su panel de politica, que tambien deja cambiar el quantum
-        pol1 = new Panelpolitica();
-        pol1.setComputador(computador1);
-        pol1Host.add(pol1, BorderLayout.CENTER);
-        pol2 = new Panelpolitica();
-        pol2.setComputador(computador2);
-        pol2Host.add(pol2, BorderLayout.CENTER);
-    }
+    //----- lo que pide el usuario -----
 
-    public void agregarBuffer(Buffer b) {
-        PanelBuffer pb = new PanelBuffer(b);
-        Nodo<PanelBuffer> nodo = new Nodo<>(pb);
-        if (panelesBuffer == null) {
-            panelesBuffer = new Listas<>(nodo);
+    private void btnPausaActionPerformed(java.awt.event.ActionEvent evt) {
+        if (so.estaPausado()) {
+            so.reanudar();
+            btnPausa.setText("Pausar");
         } else {
-            panelesBuffer.insertar(nodo);
-        }
-        //el aviso de que no hay buffers se quita con el primero
-        sinBuffers.setVisible(false);
-        filaBuffers.add(pb);
-        filaBuffers.revalidate();
-        filaBuffers.repaint();
-        //el buffer tambien se guarda para poder buscarlo por posicion
-        Nodo<Buffer> nodoBuffer = new Nodo<>(b);
-        if (buffers == null) {
-            buffers = new Listas<>(nodoBuffer);
-        } else {
-            buffers.insertar(nodoBuffer);
-        }
-        //si el formulario ya esta abierto le aparece el buffer nuevo
-        if (formulario != null) {
-            formulario.actualizarBuffers(nombresBuffers());
+            so.pausar();
+            btnPausa.setText("Reanudar");
         }
     }
 
-    //devuelve el buffer que esta en esa posicion de la lista
-    private Buffer buscarBuffer(int indice) {
-        if (buffers == null || indice < 0 || indice >= buffers.len()) {
-            return null;
+    private void btnDuracionActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            so.setDuracionCiclo(Validaciones.leerEntero(txtDuracion.getText(), "Duracion del ciclo", 1, 60000));
+        } catch (IllegalArgumentException e) {
+            avisar(e.getMessage());
         }
-        return buffers.retornar(indice);
     }
 
-    //los nombres de los buffers que ya existen, para el combo del formulario
-    private String[] nombresBuffers() {
-        int total = buffers == null ? 0 : buffers.len();
-        String[] nombres = new String[total];
-        for (int i = 0; i < total; i++) {
-            nombres[i] = buffers.retornar(i).getNombre();
+    private void btnVelocidadActionPerformed(java.awt.event.ActionEvent evt) {
+        try {
+            so.setVelocidadCabezal(Validaciones.leerEntero(txtVelocidad.getText(), "Velocidad del cabezal", 1, 500));
+        } catch (IllegalArgumentException e) {
+            avisar(e.getMessage());
         }
-        return nombres;
     }
 
-    //abre una ventana y si ya estaba abierta solo la trae al frente
-    private void mostrarVentana(javax.swing.JFrame v) {
-        v.setVisible(true);
-        v.toFront();
-    }
-
-    //abre la configuracion en su propia ventana, una sola vez
-    private void abrirConfiguracion() {
-        if (ventanaConfiguracion == null) {
-            panelConfiguracion = new VistaConfiguracion(this::aplicarConfiguracion);
-            ventanaConfiguracion = new VentanaConfiguracion(panelConfiguracion);
-            ventanaConfiguracion.setLocationRelativeTo(this);
+    private void cmbPoliticaDiscoActionPerformed(java.awt.event.ActionEvent evt) {
+        if (ajustando || so == null) {
+            return;
         }
-        mostrarVentana(ventanaConfiguracion);
+        PoliticaDisco p = (PoliticaDisco) cmbPoliticaDisco.getSelectedItem();
+        if (p != null && p != disco.getPolitica()) {
+            so.cambiarPoliticaDisco(p);
+        }
     }
 
-    //abre el log en su propia ventana
-    private void abrirLog() {
+    private void cmbModoActionPerformed(java.awt.event.ActionEvent evt) {
+        cambiarModoUsuario();
+    }
+
+    private void cmbUsuarioActionPerformed(java.awt.event.ActionEvent evt) {
+        cambiarModoUsuario();
+    }
+
+    private void cambiarModoUsuario() {
+        if (ajustando || so == null) {
+            return;
+        }
+        ModoUsuario modo = (ModoUsuario) cmbModo.getSelectedItem();
+        cmbUsuario.setEnabled(modo == ModoUsuario.USUARIO);
+        String nombre = "admin";
+        if (modo == ModoUsuario.USUARIO) {
+            Object elegido = cmbUsuario.getEditor().getItem();
+            try {
+                nombre = Validaciones.leerTexto(elegido == null ? "" : elegido.toString(), "Usuario", 30);
+            } catch (IllegalArgumentException e) {
+                //sin un nombre valido no se puede entrar como usuario, se queda en administrador
+                avisar(e.getMessage());
+                ajustando = true;
+                cmbModo.setSelectedItem(ModoUsuario.ADMINISTRADOR);
+                cmbUsuario.setEnabled(false);
+                ajustando = false;
+                modo = ModoUsuario.ADMINISTRADOR;
+            }
+        }
+        if (modo != so.getModoUsuario() || !nombre.equals(so.getUsuario())) {
+            so.setModoUsuario(modo, nombre);
+        }
+        mostrarModoUsuario();
+    }
+
+    private void mostrarModoUsuario() {
+        boolean admin = so.getModoUsuario() == ModoUsuario.ADMINISTRADOR;
+        lblModoUsuario.setText("Activo: " + so.getModoUsuario() + (admin ? "" : " (" + so.getUsuario() + ")"));
+        lblModoUsuario.setForeground(admin ? new Color(20, 100, 60) : new Color(170, 90, 0));
+    }
+
+    private void btnCrearProcesoActionPerformed(java.awt.event.ActionEvent evt) {
+        abrirFormulario(null, panelArchivos.getSeleccionado(), false);
+    }
+
+    //abre el formulario ya preparado para la operacion; el formulario solo crea el proceso
+    private void abrirFormulario(TipoOperacionES op, InfoNodo sobre, boolean directorio) {
+        if (op != null && op != TipoOperacionES.CREAR && sobre == null) {
+            avisar("Primero selecciona un archivo o directorio en el arbol");
+            return;
+        }
+        if (formulario == null) {
+            formulario = new FormularioES(this, so);
+        }
+        formulario.preparar(op, sobre, directorio);
+        formulario.setVisible(true);
+        formulario.toFront();
+    }
+
+    private void btnPoliticaCpuActionPerformed(java.awt.event.ActionEvent evt) {
+        if (ventanaPolitica == null) {
+            panelPolitica = new Panelpolitica();
+            panelPolitica.setComputador(computador);
+            ventanaPolitica = new JDialog(this, "Politica de CPU", false);
+            ventanaPolitica.add(panelPolitica);
+            ventanaPolitica.pack();
+            ventanaPolitica.setLocationRelativeTo(this);
+        }
+        panelPolitica.mostrarPolitica();
+        ventanaPolitica.setVisible(true);
+    }
+
+    private void btnLogActionPerformed(java.awt.event.ActionEvent evt) {
         if (ventanaLog == null) {
+            panelLog = new Panellog(so.getLog());
             ventanaLog = new VentanaLog(panelLog);
             ventanaLog.setLocationRelativeTo(this);
         }
-        mostrarVentana(ventanaLog);
+        ventanaLog.setVisible(true);
+        ventanaLog.toFront();
     }
 
-    //abre las metricas en su propia ventana
-    //se arma de nuevo si hay buffers o computadores nuevos, para que salgan en la tabla
-    private void abrirMetricas() {
-        int cantBuffers = buffers == null ? 0 : buffers.len();
-        if (ventanaMetricas != null && (cantBuffers != buffersEnMetricas || computadores.len() != computadoresEnMetricas)) {
-            panelMetricas.detener();
-            ventanaMetricas.dispose();
-            ventanaMetricas = null;
-        }
+    private void btnMetricasActionPerformed(java.awt.event.ActionEvent evt) {
         if (ventanaMetricas == null) {
-            buffersEnMetricas = cantBuffers;
-            computadoresEnMetricas = computadores.len();
-            panelMetricas = new PanelMetricas(metricas, computadoresEnMetricas, buffersEnMetricas);
+            panelMetricas = new PanelMetricas(so.getMetricas(), so.getDisco());
             ventanaMetricas = new VentanaMetricas(panelMetricas);
             ventanaMetricas.setLocationRelativeTo(this);
         }
-        mostrarVentana(ventanaMetricas);
+        ventanaMetricas.setVisible(true);
+        ventanaMetricas.toFront();
     }
 
-    //la configuracion ya viene validada, aqui solo se reparte a quien le toca
-    private void aplicarConfiguracion(Configuracion config) {
-        //antes de tocar nada se revisa que en cada computador quepa lo que ya tiene mas los buffers del archivo
-        for (int i = 0; i < config.computadores.length; i++) {
-            float necesita = 0;
-            Computador c = i < computadores.len() ? computadores.retornar(i) : null;
-            if (c != null) {
-                necesita = c.getRamt() - c.getRam();
-            }
-            for (int j = 0; j < config.buffers.length; j++) {
-                if (config.buffers[j].computadorAnfitrion == i + 1) {
-                    necesita += config.buffers[j].capacidad;
-                }
-            }
-            if (necesita > config.computadores[i].ram) {
-                throw new IllegalArgumentException("En el Computador " + (i + 1) + " no cabe todo: necesita "
-                        + necesita + " MB y la configuracion le da " + config.computadores[i].ram + " MB");
-            }
+    private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {
+        JFileChooser selector = new JFileChooser(new java.io.File("datos").getAbsoluteFile());
+        selector.setFileFilter(new FileNameExtensionFilter("Archivos JSON", "json"));
+        if (selector.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
         }
-        gC.setcduration(config.duracionCicloMs);
-        txtDuracion.setText(String.valueOf(config.duracionCicloMs));
-        //validar() garantiza que hay por lo menos dos computadores
-        //si la configuracion pide mas, se crean con la misma clase y se agregan al reloj
-        for (int i = computadores.len(); i < config.computadores.length; i++) {
-            agregarComputadorExtra(i + 1);
+        String ruta = selector.getSelectedFile().getPath();
+        if (!ruta.toLowerCase().endsWith(".json")) {
+            ruta = ruta + ".json";
         }
-        for (int i = 0; i < config.computadores.length; i++) {
-            Computador c = computadores.retornar(i);
-            c.setRetrasoRed(config.latenciaRed);
-            aplicarAComputador(c, config.computadores[i]);
-        }
-        //que cada panel muestre la politica que quedo
-        pol1.mostrarPolitica();
-        pol2.mostrarPolitica();
-        if (ventanasExtra != null) {
-            for (int i = 0; i < ventanasExtra.len(); i++) {
-                ventanasExtra.retornar(i).mostrarPolitica();
-            }
-        }
-        //primero los buffers, porque los productores y consumidores los necesitan
-        crearBuffers(config);
-        crearProcesos(config);
-        //se aplica una sola vez: hacerlo con procesos corriendo reiniciaria la RAM
-        panelConfiguracion.desactivarAplicar();
-        JOptionPane.showMessageDialog(this, "Configuracion aplicada");
-    }
-
-    //crea el computador numero n, le pone el log y las metricas y le abre su ventana
-    private void agregarComputadorExtra(int n) {
-        Computador c = new Computador();
-        c.setCPUt("CPU " + n);
-        c.setNombre("Computador " + n);
-        c.setLog(log);
-        c.setMetricas(metricas, n - 1);
-        gC.agregarComputador(c);
-        VentanaComputador v = new VentanaComputador(c);
-        v.setVisible(true);
-        Nodo<VentanaComputador> nodo = new Nodo<>(v);
-        if (ventanasExtra == null) {
-            ventanasExtra = new Listas<>(nodo);
-        } else {
-            ventanasExtra.insertar(nodo);
-        }
-        //los formularios se vuelven a armar para que ofrezcan el computador nuevo
-        if (ventanaProceso != null) {
-            ventanaProceso.dispose();
-            ventanaProceso = null;
-            formulario = null;
-        }
-        if (ventanaBuffers != null) {
-            ventanaBuffers.dispose();
-            ventanaBuffers = null;
-        }
-        log.registrar((int) gC.getCiclo(), "Se agrega el " + c.getNombre() + " al cluster");
-    }
-
-    //el computador por su numero (1, 2, 3...), o null si no existe
-    private Computador buscarComputador(int numero) {
-        if (numero < 1 || numero > computadores.len()) {
-            return null;
-        }
-        return computadores.retornar(numero - 1);
-    }
-
-    //crea los buffers del archivo, en el mismo orden para que los procesos los encuentren
-    private void crearBuffers(Configuracion config) {
-        for (int i = 0; i < config.buffers.length; i++) {
-            Configuracion.ConfigBuffer datos = config.buffers[i];
-            Buffer b = new Buffer("B" + (i + 1), datos.capacidad);
-            Computador anfitrion = buscarComputador(datos.computadorAnfitrion);
-            if (!b.setComputador(anfitrion)) {
-                JOptionPane.showMessageDialog(this, "El buffer B" + (i + 1)
-                        + " no cabe en la RAM del Computador " + datos.computadorAnfitrion,
-                        "Aviso", JOptionPane.WARNING_MESSAGE);
-            }
-            //se agrega igual, para que las posiciones sigan cuadrando con el archivo
-            agregarBuffer(b);
-        }
-    }
-
-    //crea los procesos del archivo por el mismo camino que usa el formulario
-    private void crearProcesos(Configuracion config) {
-        for (int i = 0; i < config.procesos.length; i++) {
-            Configuracion.ConfigProceso datos = config.procesos[i];
-            PCB pcb = new PCB(FormularioProceso.siguienteId(), datos.nombre, 0, datos.tipo, datos.memoria);
-            pcb.setPrioridad(datos.prioridad);
-            pcb.setdeadline(datos.deadline);
-            pcb.settime(datos.instrucciones);
-            try {
-                procesoCreado(new SolicitudProceso(pcb, datos.computador, datos.buffer,
-                        datos.ciclos, datos.cadaCuantosCiclos, datos.elementos));
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(this, "Proceso " + datos.nombre + ": " + e.getMessage(),
-                        "Aviso", JOptionPane.WARNING_MESSAGE);
-            }
-        }
-    }
-
-    //la ram, la politica y el quantum de un computador
-    private void aplicarAComputador(Computador c, Configuracion.ConfigComputador datos) {
-        //lo que ya ocupan los buffers y procesos creados antes sigue ocupado con la RAM nueva
-        float usada = c.getRamt() - c.getRam();
-        c.setRAMt(datos.ram);
-        c.useRam(usada);
-        PoliticaPlanificacion politica = PoliticaPlanificacion.valueOf(datos.politica);
-        c.setPlanificador(SelectorPolitica.crear(politica, datos.quantum));
-    }
-
-    //abre el panel de crear buffers en su propia ventana, una sola vez
-    private void abrirVistaBuffers() {
-        if (ventanaBuffers == null) {
-            Computador[] compus = new Computador[computadores.len()];
-            for (int i = 0; i < compus.length; i++) {
-                compus[i] = computadores.retornar(i);
-            }
-            panelCrearBuffers = new VistaBuffers(compus, this::bufferCreado);
-            ventanaBuffers = new VentanaBuffers(panelCrearBuffers);
-            ventanaBuffers.setLocationRelativeTo(this);
-        }
-        mostrarVentana(ventanaBuffers);
-    }
-
-    //aqui llega el buffer que acaba de crear la vista de buffers
-    private void bufferCreado(Buffer b, int indice) {
-        agregarBuffer(b);
-    }
-
-    //abre el formulario de crear procesos en su propia ventana, una sola vez
-    private void abrirFormularioProceso() {
-        if (ventanaProceso == null) {
-            formulario = new FormularioProceso(computadores.len(), nombresBuffers(), this::procesoCreado);
-            ventanaProceso = new VistaProceso(formulario);
-            ventanaProceso.setLocationRelativeTo(this);
-        }
-        mostrarVentana(ventanaProceso);
-    }
-
-    //aqui llega el proceso que armo el formulario y se mete en el computador que escogieron
-    private void procesoCreado(SolicitudProceso solicitud) {
-        PCB p = solicitud.getPcb();
-        String tipo = p.gettype();
-        if (tipo.equals("Productor") || tipo.equals("Consumidor")) {
-            Buffer b = buscarBuffer(solicitud.getBuffer());
-            if (b == null) {
-                throw new IllegalArgumentException("Ese buffer ya no existe");
-            }
-            p.setBuffer(b);
-            p.setIndiceBuffer(solicitud.getBuffer());
-            p.setElementos(solicitud.getElementos());
-            p.setCadaCuantos(solicitud.getCadaCuantosCiclos());
-        } else {
-            //cpu bound e i/o bound terminan cuando se les acaban los ciclos
-            p.settime(solicitud.getCiclos());
-        }
-        Computador destino = buscarComputador(solicitud.getComputador());
-        if (destino == null) {
-            throw new IllegalArgumentException("Ese computador no existe");
-        }
-        //si pide mas memoria que toda la RAM del computador nunca podria entrar
-        if (p.getmem() > destino.getRamt()) {
-            throw new IllegalArgumentException("El proceso pide " + p.getmem() + " MB y " + destino.getNombre()
-                    + " solo tiene " + destino.getRamt() + " MB de RAM en total");
-        }
-        destino.agregarProceso(p);
-    }
-
-    //un clic en la lista muestra el PCB de ese proceso; otro clic en el mismo vuelve a seguir la CPU
-    private void conectarLista(javax.swing.JList<String> jl, int cual, int computador) {
-        jl.addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting()) {
-                return;
-            }
-            int i = jl.getSelectedIndex();
-            //el refresco de cada ciclo borra la seleccion, y eso no es un clic del usuario
-            if (i < 0 || i >= enLista[cual].length) {
-                return;
-            }
-            PCB p = enLista[cual][i];
-            if (computador == 1) {
-                seleccionado1 = p == seleccionado1 ? null : p;
-            } else {
-                seleccionado2 = p == seleccionado2 ? null : p;
-            }
-        });
-    }
-
-    //copia los procesos de una cola a un arreglo, sin cambiarle el orden a la cola
-    static PCB[] aArreglo(Cola<PCB> cola) {
-        Cola<PCB> temporal = new Cola<>();
-        int cuantos = 0;
-        PCB p = cola.Desencolar();
-        while (p != null) {
-            temporal.Encolar(p);
-            cuantos++;
-            p = cola.Desencolar();
-        }
-        PCB[] arreglo = new PCB[cuantos];
-        int i = 0;
-        p = temporal.Desencolar();
-        while (p != null) {
-            arreglo[i] = p;
-            i++;
-            cola.Encolar(p);
-            p = temporal.Desencolar();
-        }
-        return arreglo;
-    }
-
-    //esto lo llama el reloj en su propio hilo, justo despues de que los computadores hicieron su tick
-    //por eso aqui es seguro recorrer las colas, y a la ventana solo le paso los modelos ya armados
-    private void alCiclo(long cycle) {
-        final Listas<String> nuevos1;
-        final Listas<String> listos1;
-        final Listas<String> bloqueados1;
-        final Listas<String> terminados1;
-        final Listas<String> nuevos2;
-        final Listas<String> listos2;
-        final Listas<String> bloqueados2;
-        final Listas<String> terminados2;
-        //los mismos procesos, para poder mostrar su PCB si el usuario hace clic
-        final PCB[][] copia = new PCB[8][];
-        //mismo semaforo que usan onTick(), admitir() y agregarProceso(),
-        //para que nadie encole a mitad de la copia
-        computador1.tomar();
         try {
-            nuevos1 = aListas(computador1.getNuevos());
-            listos1 = aListas(computador1.getListos());
-            bloqueados1 = aListasMotivo(computador1.getBloqueados());
-            terminados1 = aListas(computador1.getTerminados());
-            copia[0] = aArreglo(computador1.getNuevos());
-            copia[1] = aArreglo(computador1.getListos());
-            copia[2] = aArreglo(computador1.getBloqueados());
-            copia[3] = aArreglo(computador1.getTerminados());
-        } finally {
-            computador1.soltar();
+            so.guardarArchivos(ruta);
+            avisar("Sistema de archivos guardado en " + ruta);
+        } catch (IOException e) {
+            avisar("No se pudo guardar: " + e.getMessage());
         }
-        computador2.tomar();
-        try {
-            nuevos2 = aListas(computador2.getNuevos());
-            listos2 = aListas(computador2.getListos());
-            bloqueados2 = aListasMotivo(computador2.getBloqueados());
-            terminados2 = aListas(computador2.getTerminados());
-            copia[4] = aArreglo(computador2.getNuevos());
-            copia[5] = aArreglo(computador2.getListos());
-            copia[6] = aArreglo(computador2.getBloqueados());
-            copia[7] = aArreglo(computador2.getTerminados());
-        } finally {
-            computador2.soltar();
-        }
-        SwingUtilities.invokeLater(() -> {
-            enLista = copia;
-            clock.setText(String.valueOf(cycle));
-            //las 4 colas del computador 1
-            mostrar(jList2, nuevos1);
-            mostrar(jList3, listos1);
-            mostrar(jList5, bloqueados1);
-            mostrar(jList6, terminados1);
-            //las 4 colas del computador 2
-            mostrar(jList4, nuevos2);
-            mostrar(jList1, listos2);
-            mostrar(jList7, bloqueados2);
-            mostrar(jList8, terminados2);
-            //la ram y el modo de cada computador
-            mostrarRam(computador1, barraRam1, RAM1);
-            mostrarRam(computador2, barraRam2, RAM2);
-            modo1.setText("Modo: " + computador1.getmode());
-            modo2.setText("Modo: " + computador2.getmode());
-            //el texto de ayuda cambia cuando ya hay procesos
-            ayuda.setText(hayProcesos(copia)
-                    ? "Haz clic en un proceso de cualquier cola para ver su PCB"
-                    : "Crea un buffer (si vas a usar productores o consumidores) y luego crea procesos"
-                    + " con los botones de abajo");
-            //paneles: se actualizan en cada ciclo
-            panelLog.actualizar();
-            pcbComputador1.mostrar(seleccionado1 != null ? seleccionado1 : computador1.getEnEjecucion());
-            pcbComputador2.mostrar(seleccionado2 != null ? seleccionado2 : computador2.getEnEjecucion());
-            if (panelesBuffer != null) {
-                for (int i = 0; i < panelesBuffer.len(); i++) {
-                    panelesBuffer.retornar(i).actualizar();
-                }
-            }
-        });
     }
 
-    //true si hay por lo menos un proceso en alguna cola
-    private static boolean hayProcesos(PCB[][] copia) {
-        for (int i = 0; i < copia.length; i++) {
-            if (copia[i] != null && copia[i].length > 0) {
-                return true;
-            }
-        }
-        return false;
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {
+        so.detener();
+        dispose();
+        System.exit(0);
     }
 
-    //la barra y el texto de la memoria: cuanta esta usada de cuanta hay
-    static void mostrarRam(Computador c, javax.swing.JProgressBar barra, javax.swing.JLabel etiqueta) {
-        int total = (int) c.getRamt();
-        int usada = (int) (c.getRamt() - c.getRam());
-        barra.setMaximum(total <= 0 ? 1 : total);
-        barra.setValue(usada);
-        etiqueta.setText(usada + " / " + total + " MB");
+    //los avisos no detienen el reloj, la simulacion sigue mientras el mensaje esta abierto
+    private void avisar(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje);
     }
+    //--- fin del bloque c ---
 
-    //copia el contenido de una cola a un modelo de lista sin cambiarle el orden a la cola
-    static Listas aListas(Cola<PCB> cola) {
-        Listas<String> lista = null;
-        Cola<PCB> temporal = new Cola<>();
-        PCB p = cola.Desencolar();
-        while (p != null) {
-            Nodo<String> nodo = new Nodo<>(p.getname() + "  (PC=" + p.getpc() + ")");
-            if (lista == null) {
-                lista = new Listas<>(nodo);
-            } else {
-                lista.insertar(nodo);
-            }
-            temporal.Encolar(p);
-            p = cola.Desencolar();
-        }
-        p = temporal.Desencolar();
-        while (p != null) {
-            cola.Encolar(p);
-            p = temporal.Desencolar();
-        }
-        return lista;
-    }
-
-    //en la cola el motivo va corto para que quepa; el completo se ve en el PCB y en el log
-    private static String motivoCorto(String motivo) {
-        int i = motivo.indexOf(" (buffer");
-        String corto = i < 0 ? motivo : motivo.substring(0, i);
-        return corto.replace("semaforo ", "sem. ");
-    }
-
-    //igual que aListas pero a los bloqueados les pone el motivo
-    static Listas aListasMotivo(Cola<PCB> cola) {
-        Listas<String> lista = null;
-        Cola<PCB> temporal = new Cola<>();
-        PCB p = cola.Desencolar();
-        while (p != null) {
-            Nodo<String> nodo = new Nodo<>(p.getname() + "  (" + motivoCorto(p.getMotivo()) + ")");
-            if (lista == null) {
-                lista = new Listas<>(nodo);
-            } else {
-                lista.insertar(nodo);
-            }
-            temporal.Encolar(p);
-            p = cola.Desencolar();
-        }
-        p = temporal.Desencolar();
-        while (p != null) {
-            cola.Encolar(p);
-            p = temporal.Desencolar();
-        }
-        return lista;
-    }
-
-    static void mostrar(javax.swing.JList<String> jl, Listas<String> lista) {
-        String[] textos = new String[lista == null ? 0 : lista.len()];
-        for (int i = 0; i < textos.length; i++) {
-            textos[i] = lista.retornar(i);
-        }
-        jl.setListData(textos);
-    }
-
-    /**
-     * This method is called from within the constructor to initialize the form.
-     * WARNING: Do NOT modify this code. The content of this method is always
-     * regenerated by the Form Editor.
-     */
+    //--- diseno: esto lo genera el disenador de NetBeans ---
     @SuppressWarnings("unchecked")
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        barraSuperior = new javax.swing.JPanel();
-        filaCiclo = new javax.swing.JPanel();
-        panelCiclo = new javax.swing.JPanel();
-        jLabel13 = new javax.swing.JLabel();
-        clock = new javax.swing.JLabel();
-        panelDuracion = new javax.swing.JPanel();
-        lblDuracion = new javax.swing.JLabel();
+        pnlBarra = new javax.swing.JPanel();
+        pnlFila1 = new javax.swing.JPanel();
+        lblTextoCiclo = new javax.swing.JLabel();
+        lblCiclo = new javax.swing.JLabel();
+        btnPausa = new javax.swing.JButton();
+        lblTextoDuracion = new javax.swing.JLabel();
         txtDuracion = new javax.swing.JTextField();
         btnDuracion = new javax.swing.JButton();
-        btnPausa = new javax.swing.JButton();
-        ayuda = new javax.swing.JLabel();
-        panelComputadores = new javax.swing.JPanel();
-        comp1 = new javax.swing.JPanel();
-        arriba1 = new javax.swing.JPanel();
-        hw1 = new javax.swing.JPanel();
-        Cpu1 = new javax.swing.JLabel();
-        modo1 = new javax.swing.JLabel();
-        ramFila1 = new javax.swing.JPanel();
-        barraRam1 = new javax.swing.JProgressBar();
-        RAM1 = new javax.swing.JLabel();
-        pcb1Host = new javax.swing.JPanel();
-        pol1Host = new javax.swing.JPanel();
-        colas1 = new javax.swing.JPanel();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jList2 = new javax.swing.JList<>();
-        jScrollPane3 = new javax.swing.JScrollPane();
-        jList3 = new javax.swing.JList<>();
-        jScrollPane9 = new javax.swing.JScrollPane();
-        jList5 = new javax.swing.JList<>();
-        jScrollPane10 = new javax.swing.JScrollPane();
-        jList6 = new javax.swing.JList<>();
-        comp2 = new javax.swing.JPanel();
-        arriba2 = new javax.swing.JPanel();
-        hw2 = new javax.swing.JPanel();
-        CPU2 = new javax.swing.JLabel();
-        modo2 = new javax.swing.JLabel();
-        ramFila2 = new javax.swing.JPanel();
-        barraRam2 = new javax.swing.JProgressBar();
-        RAM2 = new javax.swing.JLabel();
-        pcb2Host = new javax.swing.JPanel();
-        pol2Host = new javax.swing.JPanel();
-        colas2 = new javax.swing.JPanel();
-        jScrollPane4 = new javax.swing.JScrollPane();
-        jList4 = new javax.swing.JList<>();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jList1 = new javax.swing.JList<>();
-        jScrollPane11 = new javax.swing.JScrollPane();
-        jList7 = new javax.swing.JList<>();
-        jScrollPane12 = new javax.swing.JScrollPane();
-        jList8 = new javax.swing.JList<>();
-        abajo = new javax.swing.JPanel();
-        panelBuffers = new javax.swing.JPanel();
-        scrollBuffers = new javax.swing.JScrollPane();
-        filaBuffers = new javax.swing.JPanel();
-        sinBuffers = new javax.swing.JLabel();
-        barraNav = new javax.swing.JPanel();
-        btnSimulacion = new javax.swing.JButton();
+        lblTextoModoCpu = new javax.swing.JLabel();
+        lblModoCpu = new javax.swing.JLabel();
+        lblTextoRam = new javax.swing.JLabel();
+        barraRam = new javax.swing.JProgressBar();
+        lblRam = new javax.swing.JLabel();
+        pnlFila2 = new javax.swing.JPanel();
+        lblTextoPolitica = new javax.swing.JLabel();
+        cmbPoliticaDisco = new javax.swing.JComboBox<>();
+        lblTextoVelocidad = new javax.swing.JLabel();
+        txtVelocidad = new javax.swing.JTextField();
+        btnVelocidad = new javax.swing.JButton();
+        lblTextoModo = new javax.swing.JLabel();
+        cmbModo = new javax.swing.JComboBox<>();
+        lblTextoUsuario = new javax.swing.JLabel();
+        cmbUsuario = new javax.swing.JComboBox<>();
+        lblModoUsuario = new javax.swing.JLabel();
+        splCentro = new javax.swing.JSplitPane();
+        pnlArriba = new javax.swing.JPanel();
+        panelColas = new interfaz.PanelColas();
+        panelPcb = new interfaz.panelPCB();
+        pnlAbajo = new javax.swing.JPanel();
+        panelArchivos = new interfaz.PanelArchivos();
+        panelDisco = new interfaz.PanelDisco();
+        panelTablas = new interfaz.PanelTablas();
+        pnlBotones = new javax.swing.JPanel();
+        pnlListaBotones = new javax.swing.JPanel();
         btnCrearProceso = new javax.swing.JButton();
-        btnCrearBuffer = new javax.swing.JButton();
+        btnPoliticaCpu = new javax.swing.JButton();
         btnLog = new javax.swing.JButton();
         btnMetricas = new javax.swing.JButton();
-        btnConfiguracion = new javax.swing.JButton();
+        btnGuardar = new javax.swing.JButton();
+        lblUltimo = new javax.swing.JLabel();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("ÁvilaOS — Simulación");
-        setMinimumSize(new java.awt.Dimension(1100, 700));
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
+        setTitle("AvilaOS");
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
+        getContentPane().setLayout(new java.awt.BorderLayout(0, 4));
 
-        barraSuperior.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 6, 10));
-        barraSuperior.setLayout(new java.awt.BorderLayout());
+        pnlBarra.setLayout(new java.awt.GridLayout(2, 1));
 
-        filaCiclo.setLayout(new java.awt.BorderLayout());
+        pnlFila1.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 3));
 
-        panelCiclo.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 6, 0));
+        lblTextoCiclo.setText("Ciclo:");
+        pnlFila1.add(lblTextoCiclo);
 
-        jLabel13.setFont(jLabel13.getFont().deriveFont(jLabel13.getFont().getStyle() | java.awt.Font.BOLD, jLabel13.getFont().getSize()+8));
-        jLabel13.setText("Ciclo:");
-        panelCiclo.add(jLabel13);
+        lblCiclo.setFont(lblCiclo.getFont().deriveFont(lblCiclo.getFont().getStyle() | java.awt.Font.BOLD, lblCiclo.getFont().getSize()+4));
+        lblCiclo.setText("0");
+        lblCiclo.setPreferredSize(new java.awt.Dimension(70, 22));
+        pnlFila1.add(lblCiclo);
 
-        clock.setFont(clock.getFont().deriveFont(clock.getFont().getStyle() | java.awt.Font.BOLD, clock.getFont().getSize()+8));
-        clock.setText("0");
-        panelCiclo.add(clock);
+        btnPausa.setText("Iniciar");
+        btnPausa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPausaActionPerformed(evt);
+            }
+        });
+        pnlFila1.add(btnPausa);
 
-        filaCiclo.add(panelCiclo, java.awt.BorderLayout.WEST);
+        lblTextoDuracion.setText("Duracion del ciclo (ms):");
+        pnlFila1.add(lblTextoDuracion);
 
-        panelDuracion.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
-
-        lblDuracion.setText("Duración del ciclo (ms)");
-        panelDuracion.add(lblDuracion);
-
-        txtDuracion.setColumns(6);
-        txtDuracion.setText("");
-        panelDuracion.add(txtDuracion);
+        txtDuracion.setColumns(5);
+        pnlFila1.add(txtDuracion);
 
         btnDuracion.setText("Aplicar");
-        btnDuracion.addActionListener(this::btnDuracionActionPerformed);
-        panelDuracion.add(btnDuracion);
+        btnDuracion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnDuracionActionPerformed(evt);
+            }
+        });
+        pnlFila1.add(btnDuracion);
 
-        btnPausa.setText("Pausar");
-        btnPausa.addActionListener(this::btnPausaActionPerformed);
-        panelDuracion.add(btnPausa);
+        lblTextoModoCpu.setText("   CPU en modo:");
+        pnlFila1.add(lblTextoModoCpu);
 
-        filaCiclo.add(panelDuracion, java.awt.BorderLayout.EAST);
+        lblModoCpu.setPreferredSize(new java.awt.Dimension(70, 20));
+        pnlFila1.add(lblModoCpu);
 
-        barraSuperior.add(filaCiclo, java.awt.BorderLayout.CENTER);
+        lblTextoRam.setText("RAM:");
+        pnlFila1.add(lblTextoRam);
 
-        ayuda.setText("Crea un buffer (si vas a usar productores o consumidores) y luego crea procesos con los botones de abajo");
-        barraSuperior.add(ayuda, java.awt.BorderLayout.SOUTH);
+        barraRam.setPreferredSize(new java.awt.Dimension(160, 16));
+        pnlFila1.add(barraRam);
 
-        getContentPane().add(barraSuperior, java.awt.BorderLayout.NORTH);
+        lblRam.setText(" ");
+        pnlFila1.add(lblRam);
 
-        panelComputadores.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 10, 0, 10));
-        panelComputadores.setLayout(new java.awt.GridLayout(1, 2, 10, 0));
+        pnlBarra.add(pnlFila1);
 
-        comp1.setBorder(javax.swing.BorderFactory.createTitledBorder("Computador 1"));
-        comp1.setLayout(new java.awt.BorderLayout());
+        pnlFila2.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 3));
 
-        arriba1.setLayout(new java.awt.BorderLayout());
+        lblTextoPolitica.setText("Politica de disco:");
+        pnlFila2.add(lblTextoPolitica);
 
-        hw1.setBorder(javax.swing.BorderFactory.createTitledBorder("Hardware"));
-        hw1.setLayout(new java.awt.GridLayout(3, 1));
+        cmbPoliticaDisco.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbPoliticaDiscoActionPerformed(evt);
+            }
+        });
+        pnlFila2.add(cmbPoliticaDisco);
 
-        Cpu1.setText("CPU:");
-        hw1.add(Cpu1);
+        lblTextoVelocidad.setText("Velocidad del cabezal (bloques por ciclo):");
+        pnlFila2.add(lblTextoVelocidad);
 
-        modo1.setText("Modo:");
-        hw1.add(modo1);
+        txtVelocidad.setColumns(3);
+        pnlFila2.add(txtVelocidad);
 
-        ramFila1.setLayout(new java.awt.BorderLayout());
-        ramFila1.add(barraRam1, java.awt.BorderLayout.CENTER);
+        btnVelocidad.setText("Aplicar");
+        btnVelocidad.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnVelocidadActionPerformed(evt);
+            }
+        });
+        pnlFila2.add(btnVelocidad);
 
-        RAM1.setText("0 / 0 MB");
-        RAM1.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 8, 0, 4));
-        ramFila1.add(RAM1, java.awt.BorderLayout.EAST);
+        lblTextoModo.setText("   Modo de uso:");
+        pnlFila2.add(lblTextoModo);
 
-        hw1.add(ramFila1);
+        cmbModo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbModoActionPerformed(evt);
+            }
+        });
+        pnlFila2.add(cmbModo);
 
-        arriba1.add(hw1, java.awt.BorderLayout.NORTH);
+        lblTextoUsuario.setText("Usuario:");
+        pnlFila2.add(lblTextoUsuario);
 
-        pcb1Host.setLayout(new java.awt.BorderLayout());
-        arriba1.add(pcb1Host, java.awt.BorderLayout.CENTER);
+        cmbUsuario.setEditable(true);
+        cmbUsuario.setPreferredSize(new java.awt.Dimension(120, 26));
+        cmbUsuario.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbUsuarioActionPerformed(evt);
+            }
+        });
+        pnlFila2.add(cmbUsuario);
 
-        pol1Host.setBorder(javax.swing.BorderFactory.createTitledBorder("Planificador"));
-        pol1Host.setLayout(new java.awt.BorderLayout());
-        arriba1.add(pol1Host, java.awt.BorderLayout.SOUTH);
+        lblModoUsuario.setFont(lblModoUsuario.getFont().deriveFont(lblModoUsuario.getFont().getStyle() | java.awt.Font.BOLD));
+        lblModoUsuario.setText(" ");
+        pnlFila2.add(lblModoUsuario);
 
-        comp1.add(arriba1, java.awt.BorderLayout.NORTH);
+        pnlBarra.add(pnlFila2);
 
-        colas1.setBorder(javax.swing.BorderFactory.createTitledBorder("Colas"));
-        colas1.setLayout(new java.awt.GridLayout(1, 4, 6, 0));
+        getContentPane().add(pnlBarra, java.awt.BorderLayout.PAGE_START);
 
-        jScrollPane2.setBorder(javax.swing.BorderFactory.createTitledBorder("Nuevos"));
-        jScrollPane2.setViewportView(jList2);
-        colas1.add(jScrollPane2);
+        splCentro.setDividerLocation(285);
+        splCentro.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
 
-        jScrollPane3.setBorder(javax.swing.BorderFactory.createTitledBorder("Listos"));
-        jScrollPane3.setViewportView(jList3);
-        colas1.add(jScrollPane3);
+        pnlArriba.setLayout(new java.awt.BorderLayout(6, 0));
+        pnlArriba.add(panelColas, java.awt.BorderLayout.CENTER);
 
-        jScrollPane9.setBorder(javax.swing.BorderFactory.createTitledBorder("Bloqueados"));
-        jScrollPane9.setViewportView(jList5);
-        colas1.add(jScrollPane9);
+        panelPcb.setPreferredSize(new java.awt.Dimension(290, 240));
+        pnlArriba.add(panelPcb, java.awt.BorderLayout.LINE_END);
 
-        jScrollPane10.setBorder(javax.swing.BorderFactory.createTitledBorder("Terminados"));
-        jScrollPane10.setViewportView(jList6);
-        colas1.add(jScrollPane10);
+        splCentro.setTopComponent(pnlArriba);
 
-        comp1.add(colas1, java.awt.BorderLayout.CENTER);
+        pnlAbajo.setLayout(new java.awt.BorderLayout(6, 0));
+        pnlAbajo.add(panelArchivos, java.awt.BorderLayout.LINE_START);
+        pnlAbajo.add(panelDisco, java.awt.BorderLayout.CENTER);
+        pnlAbajo.add(panelTablas, java.awt.BorderLayout.LINE_END);
 
-        panelComputadores.add(comp1);
+        splCentro.setRightComponent(pnlAbajo);
 
-        comp2.setBorder(javax.swing.BorderFactory.createTitledBorder("Computador 2"));
-        comp2.setLayout(new java.awt.BorderLayout());
+        getContentPane().add(splCentro, java.awt.BorderLayout.CENTER);
 
-        arriba2.setLayout(new java.awt.BorderLayout());
+        pnlBotones.setLayout(new java.awt.BorderLayout());
 
-        hw2.setBorder(javax.swing.BorderFactory.createTitledBorder("Hardware"));
-        hw2.setLayout(new java.awt.GridLayout(3, 1));
-
-        CPU2.setText("CPU:");
-        hw2.add(CPU2);
-
-        modo2.setText("Modo:");
-        hw2.add(modo2);
-
-        ramFila2.setLayout(new java.awt.BorderLayout());
-        ramFila2.add(barraRam2, java.awt.BorderLayout.CENTER);
-
-        RAM2.setText("0 / 0 MB");
-        RAM2.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 8, 0, 4));
-        ramFila2.add(RAM2, java.awt.BorderLayout.EAST);
-
-        hw2.add(ramFila2);
-
-        arriba2.add(hw2, java.awt.BorderLayout.NORTH);
-
-        pcb2Host.setLayout(new java.awt.BorderLayout());
-        arriba2.add(pcb2Host, java.awt.BorderLayout.CENTER);
-
-        pol2Host.setBorder(javax.swing.BorderFactory.createTitledBorder("Planificador"));
-        pol2Host.setLayout(new java.awt.BorderLayout());
-        arriba2.add(pol2Host, java.awt.BorderLayout.SOUTH);
-
-        comp2.add(arriba2, java.awt.BorderLayout.NORTH);
-
-        colas2.setBorder(javax.swing.BorderFactory.createTitledBorder("Colas"));
-        colas2.setLayout(new java.awt.GridLayout(1, 4, 6, 0));
-
-        jScrollPane4.setBorder(javax.swing.BorderFactory.createTitledBorder("Nuevos"));
-        jScrollPane4.setViewportView(jList4);
-        colas2.add(jScrollPane4);
-
-        jScrollPane1.setBorder(javax.swing.BorderFactory.createTitledBorder("Listos"));
-        jScrollPane1.setViewportView(jList1);
-        colas2.add(jScrollPane1);
-
-        jScrollPane11.setBorder(javax.swing.BorderFactory.createTitledBorder("Bloqueados"));
-        jScrollPane11.setViewportView(jList7);
-        colas2.add(jScrollPane11);
-
-        jScrollPane12.setBorder(javax.swing.BorderFactory.createTitledBorder("Terminados"));
-        jScrollPane12.setViewportView(jList8);
-        colas2.add(jScrollPane12);
-
-        comp2.add(colas2, java.awt.BorderLayout.CENTER);
-
-        panelComputadores.add(comp2);
-
-        getContentPane().add(panelComputadores, java.awt.BorderLayout.CENTER);
-
-        abajo.setBorder(javax.swing.BorderFactory.createEmptyBorder(6, 10, 10, 10));
-        abajo.setLayout(new java.awt.BorderLayout());
-
-        panelBuffers.setBorder(javax.swing.BorderFactory.createTitledBorder("Buffers"));
-        panelBuffers.setPreferredSize(new java.awt.Dimension(100, 215));
-        panelBuffers.setLayout(new java.awt.BorderLayout());
-
-        scrollBuffers.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollBuffers.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
-        scrollBuffers.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
-
-        filaBuffers.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 0));
-
-        sinBuffers.setText("No hay buffers todavía");
-        filaBuffers.add(sinBuffers);
-
-        scrollBuffers.setViewportView(filaBuffers);
-
-        panelBuffers.add(scrollBuffers, java.awt.BorderLayout.CENTER);
-
-        abajo.add(panelBuffers, java.awt.BorderLayout.CENTER);
-
-        barraNav.setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 0, 0, 0));
-        barraNav.setLayout(new java.awt.GridLayout(1, 6, 6, 0));
-
-        btnSimulacion.setText("Simulación");
-        btnSimulacion.addActionListener(this::btnSimulacionActionPerformed);
-        barraNav.add(btnSimulacion);
+        pnlListaBotones.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 8, 4));
 
         btnCrearProceso.setText("Crear proceso");
-        btnCrearProceso.addActionListener(this::btnCrearProcesoActionPerformed);
-        barraNav.add(btnCrearProceso);
+        btnCrearProceso.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCrearProcesoActionPerformed(evt);
+            }
+        });
+        pnlListaBotones.add(btnCrearProceso);
 
-        btnCrearBuffer.setText("Crear buffer");
-        btnCrearBuffer.addActionListener(this::btnCrearBufferActionPerformed);
-        barraNav.add(btnCrearBuffer);
+        btnPoliticaCpu.setText("Politica de CPU");
+        btnPoliticaCpu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPoliticaCpuActionPerformed(evt);
+            }
+        });
+        pnlListaBotones.add(btnPoliticaCpu);
 
         btnLog.setText("Log");
-        btnLog.addActionListener(this::btnLogActionPerformed);
-        barraNav.add(btnLog);
+        btnLog.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLogActionPerformed(evt);
+            }
+        });
+        pnlListaBotones.add(btnLog);
 
-        btnMetricas.setText("Métricas");
-        btnMetricas.addActionListener(this::btnMetricasActionPerformed);
-        barraNav.add(btnMetricas);
+        btnMetricas.setText("Metricas");
+        btnMetricas.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnMetricasActionPerformed(evt);
+            }
+        });
+        pnlListaBotones.add(btnMetricas);
 
-        btnConfiguracion.setText("Configuración");
-        btnConfiguracion.addActionListener(this::btnConfiguracionActionPerformed);
-        barraNav.add(btnConfiguracion);
+        btnGuardar.setText("Guardar sistema de archivos");
+        btnGuardar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGuardarActionPerformed(evt);
+            }
+        });
+        pnlListaBotones.add(btnGuardar);
 
-        abajo.add(barraNav, java.awt.BorderLayout.SOUTH);
+        pnlBotones.add(pnlListaBotones, java.awt.BorderLayout.LINE_START);
 
-        getContentPane().add(abajo, java.awt.BorderLayout.SOUTH);
+        lblUltimo.setForeground(new java.awt.Color(70, 70, 70));
+        lblUltimo.setText(" ");
+        lblUltimo.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        pnlBotones.add(lblUltimo, java.awt.BorderLayout.CENTER);
+
+        getContentPane().add(pnlBotones, java.awt.BorderLayout.PAGE_END);
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }
 
-    private void btnDuracionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDuracionActionPerformed
-        try {
-            //la duracion del ciclo se puede cambiar con la simulacion corriendo
-            int ms = Validaciones.leerEntero(txtDuracion.getText(), "Duracion del ciclo", 50, 10000);
-            gC.setcduration(ms);
-        } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), "Dato invalido", JOptionPane.WARNING_MESSAGE);
-        }
-    }//GEN-LAST:event_btnDuracionActionPerformed
-
-    private void btnPausaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPausaActionPerformed
-        //pausa o reanuda el reloj global; mientras esta en pausa ningun computador avanza
-        if (gC.isPaused()) {
-            gC.reanudar();
-            btnPausa.setText("Pausar");
-            log.registrar((int) gC.getCiclo(), "Simulacion reanudada");
-        } else {
-            gC.pausar();
-            btnPausa.setText("Reanudar");
-            log.registrar((int) gC.getCiclo(), "Simulacion en pausa");
-        }
-    }//GEN-LAST:event_btnPausaActionPerformed
-
-    private void btnSimulacionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimulacionActionPerformed
-        toFront();
-    }//GEN-LAST:event_btnSimulacionActionPerformed
-
-    private void btnCrearProcesoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCrearProcesoActionPerformed
-        abrirFormularioProceso();
-    }//GEN-LAST:event_btnCrearProcesoActionPerformed
-
-    private void btnCrearBufferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCrearBufferActionPerformed
-        abrirVistaBuffers();
-    }//GEN-LAST:event_btnCrearBufferActionPerformed
-
-    private void btnLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogActionPerformed
-        abrirLog();
-    }//GEN-LAST:event_btnLogActionPerformed
-
-    private void btnMetricasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMetricasActionPerformed
-        abrirMetricas();
-    }//GEN-LAST:event_btnMetricasActionPerformed
-
-    private void btnConfiguracionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnConfiguracionActionPerformed
-        abrirConfiguracion();
-    }//GEN-LAST:event_btnConfiguracionActionPerformed
-
-    // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel CPU2;
-    private javax.swing.JLabel Cpu1;
-    private javax.swing.JLabel RAM1;
-    private javax.swing.JLabel RAM2;
-    private javax.swing.JPanel abajo;
-    private javax.swing.JPanel arriba1;
-    private javax.swing.JPanel arriba2;
-    private javax.swing.JLabel ayuda;
-    private javax.swing.JPanel barraNav;
-    private javax.swing.JProgressBar barraRam1;
-    private javax.swing.JProgressBar barraRam2;
-    private javax.swing.JPanel barraSuperior;
-    private javax.swing.JButton btnConfiguracion;
-    private javax.swing.JButton btnCrearBuffer;
+    // Variables declaration - do not modify
+    private javax.swing.JProgressBar barraRam;
     private javax.swing.JButton btnCrearProceso;
     private javax.swing.JButton btnDuracion;
-    private javax.swing.JButton btnPausa;
+    private javax.swing.JButton btnGuardar;
     private javax.swing.JButton btnLog;
     private javax.swing.JButton btnMetricas;
-    private javax.swing.JButton btnSimulacion;
-    private javax.swing.JLabel clock;
-    private javax.swing.JPanel colas1;
-    private javax.swing.JPanel colas2;
-    private javax.swing.JPanel comp1;
-    private javax.swing.JPanel comp2;
-    private javax.swing.JPanel filaBuffers;
-    private javax.swing.JPanel filaCiclo;
-    private javax.swing.JPanel hw1;
-    private javax.swing.JPanel hw2;
-    private javax.swing.JLabel jLabel13;
-    private javax.swing.JList<String> jList1;
-    private javax.swing.JList<String> jList2;
-    private javax.swing.JList<String> jList3;
-    private javax.swing.JList<String> jList4;
-    private javax.swing.JList<String> jList5;
-    private javax.swing.JList<String> jList6;
-    private javax.swing.JList<String> jList7;
-    private javax.swing.JList<String> jList8;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane10;
-    private javax.swing.JScrollPane jScrollPane11;
-    private javax.swing.JScrollPane jScrollPane12;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JScrollPane jScrollPane4;
-    private javax.swing.JScrollPane jScrollPane9;
-    private javax.swing.JLabel lblDuracion;
-    private javax.swing.JLabel modo1;
-    private javax.swing.JLabel modo2;
-    private javax.swing.JPanel panelBuffers;
-    private javax.swing.JPanel panelCiclo;
-    private javax.swing.JPanel panelComputadores;
-    private javax.swing.JPanel panelDuracion;
-    private javax.swing.JPanel pcb1Host;
-    private javax.swing.JPanel pcb2Host;
-    private javax.swing.JPanel pol1Host;
-    private javax.swing.JPanel pol2Host;
-    private javax.swing.JPanel ramFila1;
-    private javax.swing.JPanel ramFila2;
-    private javax.swing.JScrollPane scrollBuffers;
-    private javax.swing.JLabel sinBuffers;
+    private javax.swing.JButton btnPausa;
+    private javax.swing.JButton btnPoliticaCpu;
+    private javax.swing.JButton btnVelocidad;
+    private javax.swing.JComboBox<ModoUsuario> cmbModo;
+    private javax.swing.JComboBox<PoliticaDisco> cmbPoliticaDisco;
+    private javax.swing.JComboBox<String> cmbUsuario;
+    private javax.swing.JLabel lblCiclo;
+    private javax.swing.JLabel lblModoCpu;
+    private javax.swing.JLabel lblModoUsuario;
+    private javax.swing.JLabel lblRam;
+    private javax.swing.JLabel lblTextoCiclo;
+    private javax.swing.JLabel lblTextoDuracion;
+    private javax.swing.JLabel lblTextoModo;
+    private javax.swing.JLabel lblTextoModoCpu;
+    private javax.swing.JLabel lblTextoPolitica;
+    private javax.swing.JLabel lblTextoRam;
+    private javax.swing.JLabel lblTextoUsuario;
+    private javax.swing.JLabel lblTextoVelocidad;
+    private javax.swing.JLabel lblUltimo;
+    private interfaz.PanelArchivos panelArchivos;
+    private interfaz.PanelColas panelColas;
+    private interfaz.PanelDisco panelDisco;
+    private interfaz.panelPCB panelPcb;
+    private interfaz.PanelTablas panelTablas;
+    private javax.swing.JPanel pnlAbajo;
+    private javax.swing.JPanel pnlArriba;
+    private javax.swing.JPanel pnlBarra;
+    private javax.swing.JPanel pnlBotones;
+    private javax.swing.JPanel pnlFila1;
+    private javax.swing.JPanel pnlFila2;
+    private javax.swing.JPanel pnlListaBotones;
+    private javax.swing.JSplitPane splCentro;
     private javax.swing.JTextField txtDuracion;
-    // End of variables declaration//GEN-END:variables
+    private javax.swing.JTextField txtVelocidad;
+    // End of variables declaration
+    //--- fin del diseno ---
 }

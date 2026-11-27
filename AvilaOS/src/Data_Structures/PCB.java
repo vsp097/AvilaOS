@@ -4,31 +4,47 @@
  */
 package Data_Structures;
 
+import avilaos.ModoUsuario;
+import avilaos.Permiso;
+import avilaos.TipoOperacionES;
+
 /**
  *
  * @author diego
  */
 public class PCB {
     
-        //datos para ejecutar el proceso
-    protected int paso = 0;
-    protected avilaos.Buffer buffer;
-    protected int elementos;
-    protected int cadaCuantos = 1;
-    protected int contador = 0;
-    protected int espera = 0;
+    //datos del proceso de E/S: que operacion pide y sobre que archivo o directorio
+    protected TipoOperacionES operacion;
+    protected String ruta = "";
+    protected boolean esDirectorio = false;
+    protected int tamanoArchivo = 0;
+    protected String nuevoNombre = "";
+    protected Permiso permisoArchivo = Permiso.PUBLICO;
+    protected String duenoArchivo = "";
+    //quien lanzo el proceso y en que modo estaba
+    protected String usuario = "admin";
+    protected ModoUsuario modoUsuario = ModoUsuario.ADMINISTRADOR;
+    //true cuando ya le mando su solicitud al disco
+    protected boolean solicitudHecha = false;
+    //true si viene del archivo de procesos y el disco lo esta esperando
+    protected boolean deCargaInicial = false;
+    //donde quedo en el area de intercambio cuando esta suspendido, -1 si esta en la RAM
+    protected int primerSwap = -1;
+    protected int bloquesSwap = 0;
+    //true mientras tiene una solicitud SUSPENDER o REACTIVAR en el disco
+    protected boolean enIntercambio = false;
     //datos para las metricas
     protected long llegada = 0;
     protected boolean tuvoDeadline = false;
     protected boolean yaEjecuto = false;
     protected int ciclosCPU = 0;
-    protected int indiceBuffer = -1;
     protected long cicloBloqueo = 0;
     private int ID;
     protected String name;
     protected int pc;
     protected EstadoProceso state = EstadoProceso.Nuevo;
-    protected String type;
+    protected TipoProceso type;
     protected float mem;
     protected int deadline;
     protected float time;
@@ -36,7 +52,7 @@ public class PCB {
     //nombre del computador donde corre el proceso, no cambia porque no hay migracion
     protected String computador = "";
     
-    public PCB(int id, String n, int p, String t, float m){
+    public PCB(int id, String n, int p, TipoProceso t, float m){
     ID = id;
     name =n;
     pc=p;
@@ -62,7 +78,7 @@ public class PCB {
         return state;
     }
     
-    public String gettype(){
+    public TipoProceso gettype(){
         return type;
     }
 
@@ -109,54 +125,6 @@ public class PCB {
         pc++;
     }
 
-    public int getPaso() {
-        return paso;
-    }
-
-    public void setPaso(int p) {
-        paso = p;
-    }
-
-    public avilaos.Buffer getBuffer() {
-        return buffer;
-    }
-
-    public void setBuffer(avilaos.Buffer b) {
-        buffer = b;
-    }
-
-    public int getElementos() {
-        return elementos;
-    }
-
-    public void setElementos(int e) {
-        elementos = e;
-    }
-
-    public int getCadaCuantos() {
-        return cadaCuantos;
-    }
-
-    public void setCadaCuantos(int c) {
-        cadaCuantos = c;
-    }
-
-    public int getContador() {
-        return contador;
-    }
-
-    public void setContador(int c) {
-        contador = c;
-    }
-
-    public int getEspera() {
-        return espera;
-    }
-
-    public void setEspera(int e) {
-        espera = e;
-    }
-    
     public long getLlegada() {
         return llegada;
     }
@@ -189,14 +157,6 @@ public class PCB {
         ciclosCPU++;
     }
 
-    public int getIndiceBuffer() {
-        return indiceBuffer;
-    }
-
-    public void setIndiceBuffer(int i) {
-        indiceBuffer = i;
-    }
-
     public long getCicloBloqueo() {
         return cicloBloqueo;
     }
@@ -204,14 +164,134 @@ public class PCB {
     public void setCicloBloqueo(long c) {
         cicloBloqueo = c;
     }
-    //si es e/s o red o semaofro
-    protected String motivo = "";
+    //por que esta bloqueado
+    protected MotivoBloqueo motivo = MotivoBloqueo.NINGUNO;
 
-    public String getMotivo() {
+    public MotivoBloqueo getMotivo() {
         return motivo;
     }
 
-    public void setMotivo(String m) {
+    public void setMotivo(MotivoBloqueo m) {
         motivo = m;
+    }
+
+    public TipoOperacionES getOperacion() {
+        return operacion;
+    }
+
+    public void setOperacion(TipoOperacionES o) {
+        operacion = o;
+    }
+
+    public String getRuta() {
+        return ruta;
+    }
+
+    public void setRuta(String r) {
+        ruta = r;
+    }
+
+    public boolean getEsDirectorio() {
+        return esDirectorio;
+    }
+
+    public void setEsDirectorio(boolean d) {
+        esDirectorio = d;
+    }
+
+    public int getTamanoArchivo() {
+        return tamanoArchivo;
+    }
+
+    public void setTamanoArchivo(int t) {
+        tamanoArchivo = t;
+    }
+
+    public String getNuevoNombre() {
+        return nuevoNombre;
+    }
+
+    public void setNuevoNombre(String n) {
+        nuevoNombre = n;
+    }
+
+    public Permiso getPermisoArchivo() {
+        return permisoArchivo;
+    }
+
+    public void setPermisoArchivo(Permiso p) {
+        permisoArchivo = p;
+    }
+
+    public String getDuenoArchivo() {
+        return duenoArchivo;
+    }
+
+    public void setDuenoArchivo(String d) {
+        duenoArchivo = d;
+    }
+
+    public String getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(String u) {
+        usuario = u;
+    }
+
+    public ModoUsuario getModoUsuario() {
+        return modoUsuario;
+    }
+
+    public void setModoUsuario(ModoUsuario m) {
+        modoUsuario = m;
+    }
+
+    public boolean getSolicitudHecha() {
+        return solicitudHecha;
+    }
+
+    public void setSolicitudHecha(boolean s) {
+        solicitudHecha = s;
+    }
+
+    public boolean getDeCargaInicial() {
+        return deCargaInicial;
+    }
+
+    public void setDeCargaInicial(boolean d) {
+        deCargaInicial = d;
+    }
+
+    //lo que se ve en las colas y en el log: la operacion con su ruta
+    public String textoOperacion() {
+        if (operacion == null) {
+            return "";
+        }
+        return operacion + " " + ruta;
+    }
+
+    public int getPrimerSwap() {
+        return primerSwap;
+    }
+
+    public void setPrimerSwap(int b) {
+        primerSwap = b;
+    }
+
+    public int getBloquesSwap() {
+        return bloquesSwap;
+    }
+
+    public void setBloquesSwap(int b) {
+        bloquesSwap = b;
+    }
+
+    public boolean getEnIntercambio() {
+        return enIntercambio;
+    }
+
+    public void setEnIntercambio(boolean e) {
+        enIntercambio = e;
     }
 }
