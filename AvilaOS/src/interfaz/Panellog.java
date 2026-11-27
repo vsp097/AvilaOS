@@ -36,11 +36,37 @@ public class Panellog extends javax.swing.JPanel {
         reloj.start();
     }
 
-    //vuelve a poner todo el texto del log
+    //ultimo texto mostrado, para no repintar si no hay eventos nuevos
+    private String ultimo = "";
+
+    //pone el texto del log; solo baja al final si el usuario ya estaba abajo
+    //al abrir la ventana se empieza viendo lo ultimo
+    private boolean primeraVez = true;
+
     public void actualizar() {
-        area.setText(log.getTexto());
-        //el scroll baja solo hasta la ultima linea
-        area.setCaretPosition(area.getDocument().getLength());
+        final javax.swing.JScrollBar barra = jScrollPane1.getVerticalScrollBar();
+        if (primeraVez && barra.getMaximum() > barra.getVisibleAmount()) {
+            barra.setValue(barra.getMaximum());
+            primeraVez = false;
+        }
+        String texto = log.getTexto();
+        if (texto.equals(ultimo)) {
+            return;
+        }
+        ultimo = texto;
+        boolean estabaAbajo = barra.getValue() + barra.getVisibleAmount() >= barra.getMaximum() - 20;
+        final int posicion = barra.getValue();
+        area.setText(texto);
+        if (estabaAbajo) {
+            area.setCaretPosition(area.getDocument().getLength());
+        } else {
+            //si estaba leyendo mas arriba, se queda donde estaba
+            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    barra.setValue(posicion);
+                }
+            });
+        }
     }
 
     /**
