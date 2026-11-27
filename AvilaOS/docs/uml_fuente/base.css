@@ -1,0 +1,19 @@
+body{margin:0;background:#fff;font-family:Helvetica,Arial,sans-serif}
+#lienzo{position:relative;background:#fff}
+#flechas{position:absolute;left:0;top:0;z-index:2;overflow:visible}
+.clase{position:absolute;z-index:3;border:1.6px solid #6c8ebf;background:#fff;border-radius:3px;box-shadow:2px 2px 0 rgba(0,0,0,.08);font-size:13px;color:#111}
+.cab{background:#dae8fc;text-align:center;padding:5px 6px;border-bottom:1.6px solid #6c8ebf}
+.nom{font-weight:bold;font-size:15px}
+.est{font-style:italic;font-size:11.5px;color:#333}
+.sub{font-size:11px;color:#333;font-style:italic}
+.sec{padding:4px 8px;border-bottom:1.2px solid #6c8ebf;line-height:17px;white-space:nowrap;font-family:"DejaVu Sans Mono",Consolas,monospace;font-size:12px}
+.sec:last-child{border-bottom:none}
+.interfaz{border-color:#82b366}.interfaz .cab{background:#d5e8d4;border-color:#82b366}.interfaz .sec{border-color:#82b366}
+.enum{border-color:#d6b656}.enum .cab{background:#fff2cc;border-color:#d6b656}.enum .sec{border-color:#d6b656}
+.principal{border-color:#9673a6}.principal .cab{background:#e1d5e7;border-color:#9673a6}.principal .sec{border-color:#9673a6}
+.abstracta{border-color:#b85450}.abstracta .cab{background:#f8cecc;border-color:#b85450}.abstracta .sec{border-color:#b85450}
+.datos{border-color:#999}.datos .cab{background:#f5f5f5;border-color:#999}.datos .sec{border-color:#999}
+.titulo{position:absolute;left:40px;top:14px;font-size:20px;font-weight:bold;color:#222}
+.etq{text-align:center;width:180px;line-height:22px}.etq span{background:#fff;font-size:11.5px;color:#222;padding:0 3px;font-style:italic}
+.leyenda{position:absolute;z-index:3;border:1px solid #bbb;padding:8px 10px;font-size:12px;line-height:19px;background:#fafafa}
+.leyenda svg{vertical-align:middle;margin-right:6px}
