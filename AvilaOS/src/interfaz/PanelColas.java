@@ -55,6 +55,8 @@ public class PanelColas extends javax.swing.JPanel {
     /**
      * Creates new form PanelColas
      */
+    //Java no deja crear un arreglo de JList<String[]> con el tipo puesto, por eso se avisa que la conversion es segura
+    @SuppressWarnings("unchecked")
     public PanelColas() {
         initComponents();
         //--- bloque b ---
