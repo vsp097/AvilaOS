@@ -45,6 +45,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
         if (ca.diskConfig.headSpeed != null) {
             disco.setVelocidad(ca.diskConfig.headSpeed);
         }
+        disco.setModoTransferencia(ModoTransferencia.desdeTexto(ca.diskConfig.transferMode));
         disco.setLog(log);
         disco.setOyente(this);
         disco.setPlanificador(SelectorPoliticaDisco.crear(PoliticaDisco.desdeTexto(cp.globalConfig.initialDiskPolicy)));
@@ -346,6 +347,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
                         if (recorrido == null) {
                             return "no hay bloques libres suficientes";
                         }
+                        recorrido = disco.recorridoDe(recorrido);
                     }
                     reservadas.agregar(ruta);
                     break;
@@ -355,7 +357,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
                     break;
                 default:
                     //leer y actualizar recorren todos los bloques del archivo en el orden de la cadena
-                    recorrido = nodo.esDirectorio() ? aqui : disco.cadena(nodo.getPrimerBloque());
+                    recorrido = nodo.esDirectorio() ? aqui : disco.recorridoDe(disco.cadena(nodo.getPrimerBloque()));
                     break;
             }
             SolicitudES s = new SolicitudES(p, op, ruta, recorrido, ciclo);
@@ -509,7 +511,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
         p.setPrimerSwap(swap[0]);
         p.setBloquesSwap(n);
         //escribir el proceso cuesta un ciclo por cada bloque del area de intercambio
-        SolicitudES s = new SolicitudES(p, TipoOperacionES.SUSPENDER, "area de intercambio", swap, ciclo);
+        SolicitudES s = new SolicitudES(p, TipoOperacionES.SUSPENDER, "area de intercambio", disco.recorridoDe(swap), ciclo);
         s.setPendiente(archivo);
         disco.encolarSinContar(s);
         return null;
@@ -518,7 +520,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
     @Override
     public void reactivar(PCB p, long ciclo) {
         //leer el proceso recorre su cadena del area de intercambio
-        int[] recorrido = disco.cadena(p.getPrimerSwap());
+        int[] recorrido = disco.recorridoDe(disco.cadena(p.getPrimerSwap()));
         disco.encolarSinContar(new SolicitudES(p, TipoOperacionES.REACTIVAR, "area de intercambio", recorrido, ciclo));
     }
 
@@ -540,6 +542,12 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
         disco.setVelocidad(v);
     }
 
+    //solo cambia las solicitudes que se creen de aqui en adelante
+    public void cambiarModoTransferencia(ModoTransferencia m) {
+        disco.setModoTransferencia(m);
+        log.registrar(ciclo(), "El disco transfiere los bloques " + m);
+    }
+
     //----- guardar el estado del sistema de archivos -----
 
     public ConfigArchivos exportarArchivos() {
@@ -550,6 +558,7 @@ public class SistemaOperativo implements ServicioES, OyenteDisco, ServicioInterc
             c.diskConfig.totalBlocks = disco.getBloquesArchivos();
             c.diskConfig.initialHead = Math.min(disco.getCabezal(), disco.getBloquesArchivos() - 1);
             c.diskConfig.headSpeed = disco.getVelocidad();
+            c.diskConfig.transferMode = disco.getModoTransferencia().enJson();
             Listas<NodoArchivo> nodos = archivos.todos();
             c.fileSystem = new ConfigArchivos.Entrada[nodos.len()];
             for (int i = 0; i < nodos.len(); i++) {

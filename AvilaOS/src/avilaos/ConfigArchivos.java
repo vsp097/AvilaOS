@@ -17,6 +17,8 @@ public class ConfigArchivos {
         public int initialHead;
         //posiciones que recorre el cabezal por ciclo, es opcional
         public Integer headSpeed;
+        //FIXED (el cabezal se queda en el primer bloque) o CHAIN (recorre la cadena), es opcional
+        public String transferMode;
     }
 
     public static class Entrada {
@@ -49,6 +51,7 @@ public class ConfigArchivos {
         if (diskConfig.headSpeed != null && (diskConfig.headSpeed < 1 || diskConfig.headSpeed > Disco.MAX_BLOQUES)) {
             throw new IllegalArgumentException("headSpeed debe estar entre 1 y " + Disco.MAX_BLOQUES);
         }
+        ModoTransferencia.desdeTexto(diskConfig.transferMode);
         if (fileSystem == null) {
             fileSystem = new Entrada[0];
         }

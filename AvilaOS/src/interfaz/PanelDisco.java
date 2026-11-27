@@ -63,7 +63,7 @@ public class PanelDisco extends javax.swing.JPanel {
         }
         DireccionCabezal dir = disco.getDireccion();
         lblCabezal.setText("Cabezal en el bloque " + cabezal + "  " + (dir == DireccionCabezal.ARRIBA ? "↑" : "↓")
-                + "  " + dir + "     Politica: " + disco.getPolitica());
+                + "  " + dir + "     Politica: " + disco.getPolitica() + "     Transferencia: " + disco.getModoTransferencia());
         SolicitudES actual = disco.getActual();
         if (disco.getRetenidas() > 0) {
             lblEstado.setText("Esperando la carga inicial: faltan " + disco.getRetenidas() + " solicitudes por llegar");

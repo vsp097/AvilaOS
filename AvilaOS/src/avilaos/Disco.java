@@ -44,6 +44,8 @@ public class Disco implements ClockListener {
     //semaforo de java para la cola, el mapa de bloques y el cabezal
     private final Semaphore llave = new Semaphore(1);
 
+    private ModoTransferencia modoTransferencia = ModoTransferencia.FIJO;
+
     private OyenteDisco oyente;
     private LogEventos log;
     private long ciclo = 0;
@@ -317,6 +319,27 @@ public class Disco implements ClockListener {
 
     public int getVelocidad() {
         return velocidad;
+    }
+
+    public void setModoTransferencia(ModoTransferencia m) {
+        modoTransferencia = m;
+    }
+
+    public ModoTransferencia getModoTransferencia() {
+        return modoTransferencia;
+    }
+
+    //los bloques que el cabezal va a visitar para una solicitud sobre esta cadena
+    //cada posicion cuesta un ciclo de lectura/escritura; en FIJO todas son el primer bloque
+    public int[] recorridoDe(int[] cadena) {
+        if (modoTransferencia == ModoTransferencia.CADENA || cadena.length == 0) {
+            return cadena;
+        }
+        int[] fijo = new int[cadena.length];
+        for (int i = 0; i < fijo.length; i++) {
+            fijo[i] = cadena[0];
+        }
+        return fijo;
     }
 
     //----- el mapa de bloques y la asignacion encadenada -----
